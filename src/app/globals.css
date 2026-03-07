@@ -400,3 +400,31 @@ body {
 
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* =================== INNER APP TEXT OVERRIDES =================== */
+/* Forces all dark theme text colours to readable dark tones on the beige background */
+.app-inner .text-white             { color: #2d1f05 !important; }
+.app-inner .text-slate-50          { color: #2d1f05 !important; }
+.app-inner .text-slate-100         { color: #3d2f0d !important; }
+.app-inner .text-slate-200         { color: #4a3a15 !important; }
+.app-inner .text-slate-300         { color: #5a4a22 !important; }
+.app-inner .text-slate-400         { color: #7c6a3a !important; }
+.app-inner .text-slate-500         { color: #9a8050 !important; }
+.app-inner .text-slate-600         { color: #b09060 !important; }
+.app-inner .text-indigo-400        { color: #8B6914 !important; }
+.app-inner .text-indigo-300        { color: #a07820 !important; }
+.app-inner .text-purple-400        { color: #7a5c10 !important; }
+.app-inner .text-pink-400          { color: #c05a0a !important; }
+.app-inner .text-yellow-400        { color: #8B5500 !important; }
+.app-inner .text-yellow-500        { color: #7a4800 !important; }
+.app-inner .text-emerald-400       { color: #1d6b35 !important; }
+.app-inner .text-red-400           { color: #9b2020 !important; }
+.app-inner .text-blue-400          { color: #1a4e8a !important; }
+
+/* Glass cards get a warm border on light bg */
+.app-inner .glass {
+  background: rgba(255,252,235,0.7) !important;
+  border-color: rgba(184,134,11,0.18) !important;
+  backdrop-filter: blur(16px);
+}
+
