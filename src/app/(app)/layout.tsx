@@ -1,17 +1,20 @@
 // src/app/(app)/layout.tsx
-// Layout for all authenticated pages — includes sidebar
+// Layout for all authenticated pages — horizontal top navbar
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import Navbar from "@/components/Navbar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect("/");
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen">
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(160deg, #fdf6e3 0%, #f8eec8 40%, #fdf0d5 100%)",
+    }}>
+      <Navbar />
+      <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "2rem 1.5rem" }}>
         {children}
       </main>
     </div>
