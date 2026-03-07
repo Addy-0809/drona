@@ -14,10 +14,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user }) {
       try {
-        // Dynamic import to avoid firebase-admin being bundled for Edge runtime
         const { adminDb } = await import("@/lib/firebase-admin");
         const { FieldValue } = await import("firebase-admin/firestore");
         const db = adminDb();
+        if (!db) return true; // No admin credentials — skip Firestore, still allow sign-in
         const userRef = db.collection("users").doc(user.id!);
         const snap = await userRef.get();
         if (!snap.exists) {

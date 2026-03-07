@@ -1,10 +1,10 @@
-// src/proxy.ts — Next.js 16 route protection (replaces middleware.ts)
-// Protects all routes except the landing page and auth API
+// src/proxy.ts — Next.js 16 route protection
+// NOTE: Function MUST be named "proxy" (not "middleware") for Next.js 16
 import { NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/api/auth"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
@@ -24,15 +24,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session cookie (NextAuth v5 / Auth.js)
+  // Check for NextAuth session cookie
   const sessionToken =
     request.cookies.get("authjs.session-token")?.value ||
     request.cookies.get("__Secure-authjs.session-token")?.value ||
     request.cookies.get("next-auth.session-token")?.value;
 
   if (!sessionToken) {
-    const loginUrl = new URL("/", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
