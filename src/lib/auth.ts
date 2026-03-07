@@ -1,23 +1,24 @@
 // src/lib/auth.ts
-// NextAuth configuration
+// NextAuth / Auth.js v5 configuration
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Required for Vercel / non-localhost deployments
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
+  // Auth.js v5 auto-reads AUTH_SECRET — do NOT pass `secret` here manually
   callbacks: {
     async signIn({ user }) {
       try {
         const { adminDb } = await import("@/lib/firebase-admin");
         const { FieldValue } = await import("firebase-admin/firestore");
         const db = adminDb();
-        if (!db) return true; // No admin credentials — skip Firestore, still allow sign-in
+        if (!db) return true; // No admin credentials — still allow sign-in
         const userRef = db.collection("users").doc(user.id!);
         const snap = await userRef.get();
         if (!snap.exists) {
