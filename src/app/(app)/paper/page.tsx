@@ -70,7 +70,7 @@ export default function PaperUploadPage() {
     URL.revokeObjectURL(url);
   }
 
-  function generatePaperText(paper: typeof analysis.mockPaper) {
+  function generatePaperText(paper: NonNullable<typeof analysis>["mockPaper"] | null) {
     if (!paper) return "";
     let text = `${paper.title}\nSubject: ${paper.subject}\nDuration: ${paper.duration} | Total Marks: ${paper.totalMarks}\n\nINSTRUCTIONS:\n`;
     paper.instructions.forEach((inst, i) => { text += `${i + 1}. ${inst}\n`; });

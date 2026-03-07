@@ -116,7 +116,7 @@ export default function FeedbackPage() {
                     />
                     <Tooltip
                       contentStyle={{ background: "#13131f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: "#f8fafc" }}
-                      formatter={(val: number) => [`${val}%`, "Score"]}
+                      formatter={(val: unknown) => [`${Number(val)}%`, "Score"]}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
