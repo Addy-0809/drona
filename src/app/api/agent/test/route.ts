@@ -9,7 +9,8 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = session?.user?.id ?? session?.user?.email;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { subjectId, subjectName, completedTopics } = await req.json();
     const topicList = completedTopics.join(", ");
@@ -66,7 +67,7 @@ Requirements:
         const testRef = db.collection("tests").doc();
         await testRef.set({
           id: testRef.id,
-          userId: session.user.id,
+          userId,
           subjectId,
           subjectName,
           completedTopics,

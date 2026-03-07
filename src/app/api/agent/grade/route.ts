@@ -9,7 +9,8 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = session?.user?.id ?? session?.user?.email;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const formData = await req.formData();
     const imageFile = formData.get("image") as File;
@@ -73,7 +74,7 @@ Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`
       if (db && testId) {
         const { FieldValue } = await import("firebase-admin/firestore");
         await db.collection("testResults").doc(testId).set(
-          { grading, gradedAt: FieldValue.serverTimestamp(), userId: session.user.id, status: "graded" },
+          { grading, gradedAt: FieldValue.serverTimestamp(), userId, status: "graded" },
           { merge: true }
         );
       }

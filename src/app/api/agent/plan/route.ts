@@ -9,7 +9,8 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = session?.user?.id ?? session?.user?.email;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { subjectId, subjectName } = await req.json();
 
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       if (db) {
         const existingPlan = await db
           .collection("weeklyPlans")
-          .where("userId", "==", session.user.id)
+          .where("userId", "==", userId)
           .where("subjectId", "==", subjectId)
           .limit(1)
           .get();
@@ -77,7 +78,7 @@ Requirements:
         const planRef = db.collection("weeklyPlans").doc();
         await planRef.set({
           id: planRef.id,
-          userId: session.user.id,
+          userId,
           subjectId,
           subjectName,
           plan,

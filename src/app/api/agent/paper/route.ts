@@ -9,7 +9,8 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = session?.user?.id ?? session?.user?.email;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const formData = await req.formData();
     const paperFile = formData.get("paper") as File;
@@ -95,7 +96,7 @@ Make the mock paper comprehensive, realistic, and following the same difficulty 
         const paperRef = db.collection("uploadedPapers").doc();
         await paperRef.set({
           id: paperRef.id,
-          userId: session.user.id,
+          userId,
           fileName: paperFile.name,
           paperData,
           createdAt: FieldValue.serverTimestamp(),
