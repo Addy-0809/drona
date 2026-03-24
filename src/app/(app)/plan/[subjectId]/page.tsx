@@ -1,11 +1,14 @@
 "use client";
 // src/app/(app)/plan/[subjectId]/page.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { getSubjectById } from "@/lib/subjects";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Youtube, Loader2, BookOpen, Trophy, Clock } from "lucide-react";
 import Link from "next/link";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 interface Topic {
   id: string;
@@ -30,6 +33,7 @@ interface Plan {
 
 export default function PlanPage() {
   const { subjectId } = useParams<{ subjectId: string }>();
+  const { data: session } = useSession();
   const subject = getSubjectById(subjectId);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
@@ -38,10 +42,52 @@ export default function PlanPage() {
   const [expandedWeek, setExpandedWeek] = useState<number>(1);
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
 
+  // Firestore doc path for this user + subject
+  const userEmail = session?.user?.email;
+  const progressDocId = userEmail ? `${userEmail.replace(/[^a-zA-Z0-9]/g, "_")}_${subjectId}` : null;
+
+  // Save progress to Firestore
+  const saveProgress = useCallback(async (completed: Set<string>, planData?: Plan | null, pId?: string | null) => {
+    if (!progressDocId) return;
+    try {
+      const docRef = doc(db, "progress", progressDocId);
+      const payload: Record<string, unknown> = {
+        completedTopics: Array.from(completed),
+        updatedAt: new Date().toISOString(),
+        subjectId,
+      };
+      if (planData) payload.plan = planData;
+      if (pId) payload.planId = pId;
+      await setDoc(docRef, payload, { merge: true });
+    } catch (e) {
+      console.error("Failed to save progress:", e);
+    }
+  }, [progressDocId, subjectId]);
+
+  // Load cached plan + progress from Firestore, then fetch from AI if needed
   const fetchPlan = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Try loading from Firestore cache first
+      if (progressDocId) {
+        const docRef = doc(db, "progress", progressDocId);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.completedTopics) {
+            setCompletedTopics(new Set(data.completedTopics as string[]));
+          }
+          if (data.plan) {
+            setPlan(data.plan as Plan);
+            setPlanId(data.planId as string || null);
+            setLoading(false);
+            return; // Use cached plan
+          }
+        }
+      }
+
+      // No cached plan — generate with AI
       const res = await fetch("/api/agent/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,6 +103,8 @@ export default function PlanPage() {
       }
       setPlan(data.plan);
       setPlanId(data.planId);
+      // Cache the generated plan in Firestore
+      saveProgress(completedTopics, data.plan, data.planId);
     } catch (e) {
       console.error("Failed to load plan:", e);
       setError(e instanceof Error ? e.message : "Failed to generate study plan");
@@ -66,14 +114,16 @@ export default function PlanPage() {
   };
 
   useEffect(() => {
-    if (subject) fetchPlan();
-  }, [subjectId, subject]);
+    if (subject && userEmail) fetchPlan();
+  }, [subjectId, subject, userEmail]);
 
   const toggleTopic = (topicId: string) => {
     setCompletedTopics((prev) => {
       const next = new Set(prev);
       if (next.has(topicId)) next.delete(topicId);
       else next.add(topicId);
+      // Save to Firestore
+      saveProgress(next);
       return next;
     });
   };
