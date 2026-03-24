@@ -29,18 +29,30 @@ export default function SubjectsPage() {
 
   async function handleSelect(subjectId: string) {
     setLoading(subjectId);
-    // Save enrolled subject (optimistic — plan page will initiate the AI call)
     router.push(`/plan/${subjectId}`);
   }
 
   return (
-    <div className="min-h-screen mesh-bg p-8">
+    <div style={{ minHeight: "100vh", padding: "2rem" }}>
       {/* HEADER */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-black mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
-          Choose a <span className="gradient-text">Subject</span>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "2rem", textAlign: "center" }}>
+        <h1 style={{
+          fontFamily: "'Outfit', sans-serif",
+          fontSize: "2.5rem",
+          fontWeight: 900,
+          color: "#3d2f0d",
+          marginBottom: "0.5rem",
+        }}>
+          Choose a{" "}
+          <span style={{
+            background: "linear-gradient(135deg, #b45309, #d97706, #f59e0b)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}>Subject</span>
         </h1>
-        <p className="text-slate-400">Select a subject to get your AI-generated 4-week study plan</p>
+        <p style={{ color: "#8b7355", fontSize: "1rem" }}>
+          Select a subject to get your AI-generated 4-week study plan
+        </p>
       </motion.div>
 
       {/* SEARCH & FILTER */}
@@ -48,26 +60,59 @@ export default function SubjectsPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="flex flex-col sm:flex-row gap-4 mb-8"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+          marginBottom: "2.5rem",
+          maxWidth: "600px",
+          margin: "0 auto 2.5rem",
+        }}
       >
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+        <div style={{ position: "relative" }}>
+          <Search size={16} style={{
+            position: "absolute",
+            left: "14px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: "#a0845e",
+          }} />
           <input
             id="subject-search"
             type="text"
             placeholder="Search subjects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input pl-9"
+            style={{
+              width: "100%",
+              padding: "0.75rem 1rem 0.75rem 2.5rem",
+              borderRadius: "1rem",
+              border: "1.5px solid #d4c4a0",
+              background: "rgba(255, 252, 240, 0.8)",
+              color: "#3d2f0d",
+              fontSize: "0.95rem",
+              outline: "none",
+              transition: "border-color 0.2s",
+            }}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               id={`filter-${cat.id}`}
               onClick={() => setCategory(cat.id)}
-              className={`btn-secondary text-sm py-2 px-4 ${category === cat.id ? "!bg-indigo-600/20 !border-indigo-500/40 !text-indigo-300" : ""}`}
+              style={{
+                padding: "0.4rem 1rem",
+                borderRadius: "2rem",
+                border: category === cat.id ? "1.5px solid #b45309" : "1.5px solid #d4c4a0",
+                background: category === cat.id ? "rgba(180, 83, 9, 0.1)" : "rgba(255, 252, 240, 0.6)",
+                color: category === cat.id ? "#b45309" : "#8b7355",
+                fontSize: "0.85rem",
+                fontWeight: category === cat.id ? 700 : 500,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
             >
               {cat.label}
             </button>
@@ -75,50 +120,121 @@ export default function SubjectsPage() {
         </div>
       </motion.div>
 
-      {/* SUBJECT GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* SUBJECT ICON GRID */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+        gap: "1.5rem",
+        maxWidth: "900px",
+        margin: "0 auto",
+      }}>
         {filtered.map((subject, i) => (
           <motion.button
             key={subject.id}
             id={`subject-${subject.id}`}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: i * 0.04, type: "spring", stiffness: 200 }}
             onClick={() => handleSelect(subject.id)}
             disabled={loading === subject.id}
-            className="card glass-hover p-6 text-left group relative overflow-hidden cursor-pointer disabled:opacity-60 w-full"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.75rem",
+              padding: "1.5rem 0.75rem",
+              borderRadius: "1.25rem",
+              border: "1.5px solid transparent",
+              background: "rgba(255, 252, 240, 0.5)",
+              cursor: "pointer",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            whileHover={{
+              y: -8,
+              scale: 1.03,
+              transition: { duration: 0.25 },
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget;
+              el.style.background = "rgba(255, 252, 240, 0.95)";
+              el.style.borderColor = subject.color;
+              el.style.boxShadow = `0 8px 32px ${subject.color}22, 0 0 20px ${subject.color}15`;
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget;
+              el.style.background = "rgba(255, 252, 240, 0.5)";
+              el.style.borderColor = "transparent";
+              el.style.boxShadow = "none";
+            }}
           >
-            {/* Gradient bg blob */}
-            <div
-              className={`absolute -top-8 -right-8 w-28 h-28 rounded-full bg-gradient-to-br ${subject.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}
-            />
+            {/* Floating icon */}
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{
+                duration: 3 + (i % 3) * 0.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              style={{
+                fontSize: "2.75rem",
+                lineHeight: 1,
+                filter: `drop-shadow(0 4px 8px ${subject.color}33)`,
+              }}
+            >
+              {subject.icon}
+            </motion.div>
 
-            <div className="text-4xl mb-4">{subject.icon}</div>
-            <p className="text-xs font-semibold mb-1" style={{ color: subject.color }}>
-              {subject.category.toUpperCase()}
-            </p>
-            <h3 className="font-bold text-white text-sm mb-2 leading-tight">{subject.name}</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">{subject.description}</p>
+            {/* Subject name — bold and illuminating */}
+            <span style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontWeight: 800,
+              fontSize: "0.85rem",
+              color: "#3d2f0d",
+              textAlign: "center",
+              lineHeight: 1.2,
+              textShadow: `0 0 20px ${subject.color}40`,
+              transition: "text-shadow 0.3s, color 0.3s",
+            }}>
+              {subject.shortName}
+            </span>
 
-            <div className={`mt-4 flex items-center gap-2 text-xs font-semibold bg-gradient-to-r ${subject.gradient} bg-clip-text text-transparent`}>
-              {loading === subject.id ? (
-                <>
-                  <Loader2 size={14} className="animate-spin text-indigo-400" />
-                  <span className="text-indigo-400">Planning...</span>
-                </>
-              ) : (
-                "Start Learning →"
-              )}
-            </div>
+            {/* Loading indicator */}
+            {loading === subject.id && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255, 252, 240, 0.9)",
+                  borderRadius: "1.25rem",
+                }}
+              >
+                <Loader2 size={20} style={{ color: subject.color }} className="animate-spin" />
+              </motion.div>
+            )}
           </motion.button>
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-20 text-slate-500">
-          No subjects found for <strong>"{search}"</strong>
+        <div style={{ textAlign: "center", padding: "4rem 0", color: "#8b7355" }}>
+          No subjects found for <strong>&quot;{search}&quot;</strong>
         </div>
       )}
+
+      {/* Glow keyframes */}
+      <style jsx global>{`
+        @keyframes subtleGlow {
+          0%, 100% { filter: brightness(1); }
+          50% { filter: brightness(1.08); }
+        }
+      `}</style>
     </div>
   );
 }
