@@ -43,6 +43,7 @@ export default function TestPage() {
   const [test, setTest] = useState<Test | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
   const [mcqAnswers, setMcqAnswers] = useState<Record<string, number>>({});
   const [shortAnswers, setShortAnswers] = useState<Record<string, string>>({});
@@ -50,27 +51,37 @@ export default function TestPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const generateTest = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const completedTopics = ["Introduction", "Core Concepts", "Advanced Topics", "Problem Solving", "Applications"];
+      const res = await fetch("/api/agent/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId, subjectName: subject?.name, completedTopics }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error ${res.status}`);
+      }
+      const data = await res.json();
+      if (!data.test) {
+        throw new Error("No test data received from AI");
+      }
+      setTest(data.test);
+      setTestId(data.testId);
+      setTimeLeft(data.test.duration * 60);
+    } catch (e) {
+      console.error("Failed to load test:", e);
+      setError(e instanceof Error ? e.message : "Failed to generate test");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch topics from plan to generate test
   useEffect(() => {
-    async function generateTest() {
-      try {
-        // For demo, use some default topics. In production, fetch from the plan.
-        const completedTopics = ["Introduction", "Core Concepts", "Advanced Topics", "Problem Solving", "Applications"];
-        const res = await fetch("/api/agent/test", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectId, subjectName: subject?.name, completedTopics }),
-        });
-        const data = await res.json();
-        setTest(data.test);
-        setTestId(data.testId);
-        setTimeLeft(data.test.duration * 60);
-      } catch (e) {
-        console.error("Failed to load test:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
     if (subject) generateTest();
   }, [subjectId, subject]);
 
@@ -132,6 +143,22 @@ export default function TestPage() {
           <Loader2 size={32} className="animate-spin text-indigo-400" />
           <p className="text-slate-400">Examiner AI is preparing your test...</p>
           <p className="text-slate-600 text-sm">Generating questions based on your study topics</p>
+        </div>
+      )}
+
+      {/* ERROR STATE */}
+      {error && !loading && (
+        <div className="max-w-md mx-auto py-16 text-center">
+          <div className="glass rounded-2xl p-8 border border-red-500/20">
+            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h3 className="text-white font-semibold mb-2">Failed to Generate Test</h3>
+            <p className="text-red-400 text-sm mb-4">{error}</p>
+            <button onClick={generateTest} className="btn-primary text-sm py-2 px-6" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+              Try Again
+            </button>
+          </div>
         </div>
       )}
 

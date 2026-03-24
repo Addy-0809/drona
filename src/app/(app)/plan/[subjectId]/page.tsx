@@ -34,26 +34,38 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedWeek, setExpandedWeek] = useState<number>(1);
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    async function fetchPlan() {
-      try {
-        const res = await fetch("/api/agent/plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectId, subjectName: subject?.name }),
-        });
-        const data = await res.json();
-        setPlan(data.plan);
-        setPlanId(data.planId);
-      } catch (e) {
-        console.error("Failed to load plan:", e);
-      } finally {
-        setLoading(false);
+  const fetchPlan = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/agent/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId, subjectName: subject?.name }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error ${res.status}`);
       }
+      const data = await res.json();
+      if (!data.plan) {
+        throw new Error("No plan data received from AI");
+      }
+      setPlan(data.plan);
+      setPlanId(data.planId);
+    } catch (e) {
+      console.error("Failed to load plan:", e);
+      setError(e instanceof Error ? e.message : "Failed to generate study plan");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     if (subject) fetchPlan();
   }, [subjectId, subject]);
 
@@ -117,6 +129,22 @@ export default function PlanPage() {
           </div>
           <p className="text-slate-400">Gemini AI is creating your personalised study plan...</p>
           <p className="text-slate-600 text-sm">This may take 15-30 seconds</p>
+        </div>
+      )}
+
+      {/* ERROR STATE */}
+      {error && !loading && (
+        <div className="max-w-md mx-auto py-16 text-center">
+          <div className="glass rounded-2xl p-8 border border-red-500/20">
+            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h3 className="text-white font-semibold mb-2">Failed to Generate Plan</h3>
+            <p className="text-red-400 text-sm mb-4">{error}</p>
+            <button onClick={fetchPlan} className="btn-primary text-sm py-2 px-6" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+              Try Again
+            </button>
+          </div>
         </div>
       )}
 

@@ -2,15 +2,21 @@
 // Paper Analysis Agent — analyses university question paper and generates a similar mock paper
 // Firestore is optional — analysis always returned via AI
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { visionModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
+    await headers();
     const session = await auth();
+    console.log("[paper] session resolved:", JSON.stringify({ hasSession: !!session, userId: session?.user?.id, email: session?.user?.email }));
     const userId = session?.user?.id ?? session?.user?.email;
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      console.error("[paper] Unauthorized — no user ID or email in session");
+      return NextResponse.json({ error: "Unauthorized — please sign in again" }, { status: 401 });
+    }
 
     const formData = await req.formData();
     const paperFile = formData.get("paper") as File;

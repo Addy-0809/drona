@@ -2,15 +2,21 @@
 // Examiner Agent — generates mock test questions from completed topics
 // Firestore is optional — test generation works without Admin SDK
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { textModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
+    await headers();
     const session = await auth();
+    console.log("[test] session resolved:", JSON.stringify({ hasSession: !!session, userId: session?.user?.id, email: session?.user?.email }));
     const userId = session?.user?.id ?? session?.user?.email;
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      console.error("[test] Unauthorized — no user ID or email in session");
+      return NextResponse.json({ error: "Unauthorized — please sign in again" }, { status: 401 });
+    }
 
     const { subjectId, subjectName, completedTopics } = await req.json();
     const topicList = completedTopics.join(", ");

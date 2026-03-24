@@ -2,15 +2,21 @@
 // Grading Agent — evaluates uploaded handwritten answer sheets using Gemini Vision
 // Firestore is optional — grading result is always returned even without DB
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { visionModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
+    await headers();
     const session = await auth();
+    console.log("[grade] session resolved:", JSON.stringify({ hasSession: !!session, userId: session?.user?.id, email: session?.user?.email }));
     const userId = session?.user?.id ?? session?.user?.email;
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      console.error("[grade] Unauthorized — no user ID or email in session");
+      return NextResponse.json({ error: "Unauthorized — please sign in again" }, { status: 401 });
+    }
 
     const formData = await req.formData();
     const imageFile = formData.get("image") as File;

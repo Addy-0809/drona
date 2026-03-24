@@ -2,15 +2,21 @@
 // Feedback Agent — generates detailed performance analysis after test
 // Firestore is optional — feedback is always returned via AI
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { textModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
+    await headers();
     const session = await auth();
+    console.log("[feedback] session resolved:", JSON.stringify({ hasSession: !!session, userId: session?.user?.id, email: session?.user?.email }));
     const userId = session?.user?.id ?? session?.user?.email;
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      console.error("[feedback] Unauthorized — no user ID or email in session");
+      return NextResponse.json({ error: "Unauthorized — please sign in again" }, { status: 401 });
+    }
 
     const { testId, subjectName, testResults } = await req.json();
 

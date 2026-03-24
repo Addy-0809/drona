@@ -2,15 +2,22 @@
 // Planning Agent — generates a 4-week study plan using Gemini
 // Firestore caching is optional — app works without Admin SDK
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { textModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth.js v5: ensure cookie context is available for session resolution
+    await headers();
     const session = await auth();
+    console.log("[plan] session resolved:", JSON.stringify({ hasSession: !!session, userId: session?.user?.id, email: session?.user?.email }));
     const userId = session?.user?.id ?? session?.user?.email;
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      console.error("[plan] Unauthorized — no user ID or email in session");
+      return NextResponse.json({ error: "Unauthorized — please sign in again" }, { status: 401 });
+    }
 
     const { subjectId, subjectName } = await req.json();
 

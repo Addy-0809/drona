@@ -34,25 +34,33 @@ export default function PaperUploadPage() {
     };
   } | null>(null);
   const [expandedSection, setExpandedSection] = useState<number | null>(0);
+  const [error, setError] = useState<string | null>(null);
 
   function handleFile(f: File) {
     if (f.type.startsWith("image/") || f.type === "application/pdf") {
       setFile(f);
+      setError(null);
     }
   }
 
   async function handleAnalyse() {
     if (!file) return;
     setLoading(true);
+    setError(null);
     try {
       const form = new FormData();
       form.append("paper", file);
       const res = await fetch("/api/agent/paper", { method: "POST", body: form });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error ${res.status}`);
+      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setAnalysis(data);
     } catch (e) {
       console.error("Paper analysis failed:", e);
+      setError(e instanceof Error ? e.message : "Failed to analyse paper");
     } finally {
       setLoading(false);
     }
@@ -156,6 +164,15 @@ export default function PaperUploadPage() {
             <div className="mt-4 glass rounded-xl p-4 text-sm text-slate-400 text-center space-y-1">
               <p>Gemini Vision is reading your question paper...</p>
               <p className="text-slate-600">Identifying patterns, marks distribution, and question types</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="mt-4 glass rounded-xl p-4 border border-red-500/20 text-center">
+              <p className="text-red-400 text-sm font-medium mb-2">⚠️ {error}</p>
+              <button onClick={handleAnalyse} className="text-xs text-indigo-400 hover:text-indigo-300 underline">
+                Try Again
+              </button>
             </div>
           )}
         </div>
