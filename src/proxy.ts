@@ -2,7 +2,7 @@
 // NOTE: Function MUST be named "proxy" (not "middleware") for Next.js 16
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/api/auth"];
+const PUBLIC_PATHS = ["/", "/api/auth", "/api/debug"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

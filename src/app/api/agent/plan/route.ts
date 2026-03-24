@@ -100,7 +100,14 @@ Requirements:
 
     return NextResponse.json({ plan, planId, cached: false });
   } catch (err) {
-    console.error("Planning agent error:", err);
-    return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("Planning agent error:", errMsg);
+    // Surface specific Gemini errors for debugging
+    const userMsg = errMsg.includes("429") || errMsg.includes("quota")
+      ? "Gemini API quota exceeded — please wait a minute and try again, or check your API key billing."
+      : errMsg.includes("404") || errMsg.includes("not found")
+      ? "Gemini model not found — the model may have been deprecated."
+      : `Failed to generate plan: ${errMsg}`;
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }

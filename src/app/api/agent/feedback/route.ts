@@ -84,7 +84,13 @@ Be encouraging but honest.`;
 
     return NextResponse.json({ feedback });
   } catch (err) {
-    console.error("Feedback agent error:", err);
-    return NextResponse.json({ error: "Failed to generate feedback" }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("Feedback agent error:", errMsg);
+    const userMsg = errMsg.includes("429") || errMsg.includes("quota")
+      ? "Gemini API quota exceeded — please wait a minute and try again."
+      : errMsg.includes("404") || errMsg.includes("not found")
+      ? "Gemini model not found — the model may have been deprecated."
+      : `Failed to generate feedback: ${errMsg}`;
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }

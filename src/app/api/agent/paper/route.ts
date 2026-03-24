@@ -115,7 +115,13 @@ Make the mock paper comprehensive, realistic, and following the same difficulty 
 
     return NextResponse.json({ ...paperData, paperId });
   } catch (err) {
-    console.error("Paper analysis agent error:", err);
-    return NextResponse.json({ error: "Failed to analyse paper" }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("Paper analysis agent error:", errMsg);
+    const userMsg = errMsg.includes("429") || errMsg.includes("quota")
+      ? "Gemini API quota exceeded — please wait a minute and try again."
+      : errMsg.includes("404") || errMsg.includes("not found")
+      ? "Gemini model not found — the model may have been deprecated."
+      : `Failed to analyse paper: ${errMsg}`;
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }

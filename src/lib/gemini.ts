@@ -16,8 +16,9 @@ const safetySettings = [
 ];
 
 // Text model for planning, test generation, feedback
+// NOTE: gemini-1.5-pro was deprecated (404). Using gemini-2.0-flash instead.
 export const textModel = genAI.getGenerativeModel({
-  model: "gemini-1.5-pro",
+  model: "gemini-2.0-flash",
   safetySettings,
   generationConfig: {
     temperature: 0.7,
@@ -28,7 +29,7 @@ export const textModel = genAI.getGenerativeModel({
 
 // Vision model for evaluating handwritten answers and paper analysis
 export const visionModel = genAI.getGenerativeModel({
-  model: "gemini-1.5-pro",
+  model: "gemini-2.0-flash",
   safetySettings,
   generationConfig: {
     temperature: 0.3,
@@ -38,3 +39,4 @@ export const visionModel = genAI.getGenerativeModel({
 });
 
 export default genAI;
+

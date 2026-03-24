@@ -90,7 +90,13 @@ Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`
 
     return NextResponse.json({ grading });
   } catch (err) {
-    console.error("Grading agent error:", err);
-    return NextResponse.json({ error: "Failed to grade answer sheet" }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("Grading agent error:", errMsg);
+    const userMsg = errMsg.includes("429") || errMsg.includes("quota")
+      ? "Gemini API quota exceeded — please wait a minute and try again."
+      : errMsg.includes("404") || errMsg.includes("not found")
+      ? "Gemini model not found — the model may have been deprecated."
+      : `Failed to grade answer sheet: ${errMsg}`;
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }
