@@ -69,21 +69,26 @@ export default function PlanPage() {
     setLoading(true);
     setError(null);
     try {
-      // Try loading from Firestore cache first
+      // Try loading from Firestore cache first (non-fatal if it fails)
       if (progressDocId) {
-        const docRef = doc(db, "progress", progressDocId);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.completedTopics) {
-            setCompletedTopics(new Set(data.completedTopics as string[]));
+        try {
+          const docRef = doc(db, "progress", progressDocId);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.completedTopics) {
+              setCompletedTopics(new Set(data.completedTopics as string[]));
+            }
+            if (data.plan) {
+              setPlan(data.plan as Plan);
+              setPlanId(data.planId as string || null);
+              setLoading(false);
+              return; // Use cached plan
+            }
           }
-          if (data.plan) {
-            setPlan(data.plan as Plan);
-            setPlanId(data.planId as string || null);
-            setLoading(false);
-            return; // Use cached plan
-          }
+        } catch (fsErr) {
+          console.warn("Firestore cache read failed (non-fatal):", fsErr);
+          // Continue to AI generation below
         }
       }
 
