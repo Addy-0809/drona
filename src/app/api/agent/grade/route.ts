@@ -78,9 +78,10 @@ Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`
     try {
       const db = adminDb();
       if (db && testId) {
-        const { FieldValue } = await import("firebase-admin/firestore");
+        const { FieldValue, Timestamp } = await import("firebase-admin/firestore");
+        const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
         await db.collection("testResults").doc(testId).set(
-          { grading, gradedAt: FieldValue.serverTimestamp(), userId, status: "graded" },
+          { grading, gradedAt: FieldValue.serverTimestamp(), userId, status: "graded", expiresAt: Timestamp.fromDate(new Date(Date.now() + SIXTY_DAYS_MS)) },
           { merge: true }
         );
       }

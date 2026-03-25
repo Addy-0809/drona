@@ -64,10 +64,12 @@ export default function PlanPage() {
       const resolvedNameMap = nameMap || topicNameMap;
       const completedArr = Array.from(completed);
       const completedNames = completedArr.map(id => resolvedNameMap[id] || id);
+      const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
       const payload: Record<string, unknown> = {
         completedTopics: completedNames, // Save names (used by mock test generation)
         completedTopicIds: completedArr,   // Save IDs (used for UI state)
         updatedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + SIXTY_DAYS_MS).toISOString(),
         subjectId,
         subjectName: subject?.name || subjectId,
       };

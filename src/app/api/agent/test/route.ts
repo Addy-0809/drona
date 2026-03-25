@@ -161,7 +161,8 @@ Requirements:
     try {
       const db = adminDb();
       if (db) {
-        const { FieldValue } = await import("firebase-admin/firestore");
+        const { FieldValue, Timestamp } = await import("firebase-admin/firestore");
+        const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
         const testRef = db.collection("tests").doc();
         await testRef.set({
           id: testRef.id,
@@ -172,6 +173,7 @@ Requirements:
           test,
           status: "pending",
           createdAt: FieldValue.serverTimestamp(),
+          expiresAt: Timestamp.fromDate(new Date(Date.now() + SIXTY_DAYS_MS)),
         });
         testId = testRef.id;
       }
