@@ -237,8 +237,7 @@ export default function LandingPage() {
           justifyContent:"center", pointerEvents:"none", zIndex:1, y: kalpY }}>
           <Image src="/kalpvriksh.png" alt="Kalpvriksh"
             width={700} height={700}
-            style={{ objectFit:"contain", opacity:0.32,
-              filter:"drop-shadow(0 0 30px rgba(218,165,32,0.3)) drop-shadow(0 0 60px rgba(184,134,11,0.15))" }}
+            style={{ objectFit:"contain", opacity:0.3 }}
             priority/>
         </motion.div>
 
