@@ -1,10 +1,10 @@
 "use client";
 // src/app/(app)/resources/[topicId]/page.tsx
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ExternalLink, Youtube, Loader2, Clock, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+
 
 interface Video {
   videoId: string;
@@ -18,6 +18,7 @@ interface Video {
 
 export default function ResourcesPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const topic = searchParams.get("topic") || "";
   const subject = searchParams.get("subject") || "";
 
@@ -46,8 +47,8 @@ export default function ResourcesPage() {
       {/* HEADER */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "2rem" }}>
         {/* Back link */}
-        <Link
-          href="/subjects"
+        <button
+          onClick={() => router.back()}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -55,13 +56,16 @@ export default function ResourcesPage() {
             color: "#a0845e",
             fontSize: "0.82rem",
             fontWeight: 500,
-            textDecoration: "none",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
             marginBottom: "1rem",
           }}
         >
           <ArrowLeft size={14} />
-          Back to Subjects
-        </Link>
+          Back to Study Plan
+        </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "0.5rem" }}>
           <div style={{
