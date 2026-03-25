@@ -46,23 +46,45 @@ export default function PlanPage() {
   const userEmail = session?.user?.email;
   const progressDocId = userEmail ? `${userEmail.replace(/[^a-zA-Z0-9]/g, "_")}_${subjectId}` : null;
 
+  // Map from topic ID -> topic name for human-readable names
+  const [topicNameMap, setTopicNameMap] = useState<Record<string, string>>({});
+
   // Save progress to Firestore
-  const saveProgress = useCallback(async (completed: Set<string>, planData?: Plan | null, pId?: string | null) => {
+  // Accept nameMap explicitly to avoid stale closure when called right after setTopicNameMap
+  const saveProgress = useCallback(async (
+    completed: Set<string>,
+    planData?: Plan | null,
+    pId?: string | null,
+    nameMap?: Record<string, string>,
+  ) => {
     if (!progressDocId) return;
     try {
       const docRef = doc(db, "progress", progressDocId);
+      // Use the explicitly passed nameMap, or fall back to state
+      const resolvedNameMap = nameMap || topicNameMap;
+      const completedArr = Array.from(completed);
+      const completedNames = completedArr.map(id => resolvedNameMap[id] || id);
       const payload: Record<string, unknown> = {
-        completedTopics: Array.from(completed),
+        completedTopics: completedNames, // Save names (used by mock test generation)
+        completedTopicIds: completedArr,   // Save IDs (used for UI state)
         updatedAt: new Date().toISOString(),
         subjectId,
+        subjectName: subject?.name || subjectId,
       };
-      if (planData) payload.plan = planData;
+      if (planData) {
+        payload.plan = planData;
+        // Build the topic name map from the plan
+        const planNameMap: Record<string, string> = {};
+        planData.weeks.forEach(w => w.topics.forEach(t => { planNameMap[t.id] = t.name; }));
+        payload.topicNameMap = planNameMap;
+      }
       if (pId) payload.planId = pId;
       await setDoc(docRef, payload, { merge: true });
+      console.log('[progress] Saved to Firestore:', progressDocId, '| topics:', completedNames.length);
     } catch (e) {
       console.error("Failed to save progress:", e);
     }
-  }, [progressDocId, subjectId]);
+  }, [progressDocId, subjectId, topicNameMap, subject?.name]);
 
   // Load cached plan + progress from Firestore, then fetch from AI if needed
   const fetchPlan = async () => {
@@ -76,12 +98,25 @@ export default function PlanPage() {
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             const data = snap.data();
-            if (data.completedTopics) {
-              setCompletedTopics(new Set(data.completedTopics as string[]));
+            // Use IDs for checkbox state (fallback to completedTopics for backward compat)
+            const ids = (data.completedTopicIds || data.completedTopics || []) as string[];
+            if (ids.length > 0) {
+              setCompletedTopics(new Set(ids));
+            }
+            // Restore topic name map if available
+            if (data.topicNameMap) {
+              setTopicNameMap(data.topicNameMap as Record<string, string>);
             }
             if (data.plan) {
-              setPlan(data.plan as Plan);
+              const planData = data.plan as Plan;
+              setPlan(planData);
               setPlanId(data.planId as string || null);
+              // Build name map from plan if not already stored
+              if (!data.topicNameMap) {
+                const nameMap: Record<string, string> = {};
+                planData.weeks.forEach(w => w.topics.forEach(t => { nameMap[t.id] = t.name; }));
+                setTopicNameMap(nameMap);
+              }
               setLoading(false);
               return; // Use cached plan
             }
@@ -108,8 +143,12 @@ export default function PlanPage() {
       }
       setPlan(data.plan);
       setPlanId(data.planId);
-      // Cache the generated plan in Firestore
-      saveProgress(completedTopics, data.plan, data.planId);
+      // Build topic name map from the new plan
+      const nameMap: Record<string, string> = {};
+      data.plan.weeks.forEach((w: Week) => w.topics.forEach((t: Topic) => { nameMap[t.id] = t.name; }));
+      setTopicNameMap(nameMap);
+      // Cache the generated plan in Firestore — pass nameMap explicitly to avoid stale closure
+      saveProgress(completedTopics, data.plan, data.planId, nameMap);
     } catch (e) {
       console.error("Failed to load plan:", e);
       setError(e instanceof Error ? e.message : "Failed to generate study plan");

@@ -50,16 +50,16 @@ export default function TestPage() {
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [noProgress, setNoProgress] = useState(false);
 
-  const generateTest = async () => {
+  const generateTest = async (topics: string[]) => {
     setLoading(true);
     setError(null);
     try {
-      const completedTopics = ["Introduction", "Core Concepts", "Advanced Topics", "Problem Solving", "Applications"];
       const res = await fetch("/api/agent/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectId, subjectName: subject?.name, completedTopics }),
+        body: JSON.stringify({ subjectId, subjectName: subject?.name, completedTopics: topics }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -80,9 +80,34 @@ export default function TestPage() {
     }
   };
 
-  // Fetch topics from plan to generate test
+  // Fetch actual completed topics, then generate test
   useEffect(() => {
-    if (subject) generateTest();
+    if (!subject) return;
+    const init = async () => {
+      try {
+        // Fetch progress from Firestore via our progress API
+        const progressRes = await fetch(`/api/progress?subjectId=${subjectId}`);
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          const topics: string[] = progressData.completedTopics || [];
+          if (topics.length === 0) {
+            setNoProgress(true);
+            setLoading(false);
+            return;
+          }
+          generateTest(topics);
+        } else {
+          // If progress API fails, try with plan-based topics
+          setNoProgress(true);
+          setLoading(false);
+        }
+      } catch {
+        // Fallback: still allow test generation with plan data from query params
+        setNoProgress(true);
+        setLoading(false);
+      }
+    };
+    init();
   }, [subjectId, subject]);
 
   // Countdown timer
@@ -137,25 +162,64 @@ export default function TestPage() {
         )}
       </div>
 
+      {/* NO PROGRESS — redirect to study */}
+      {noProgress && !loading && !error && (
+        <div className="max-w-md mx-auto py-16 text-center">
+          <div style={{
+            padding: "2rem", borderRadius: "1.25rem",
+            background: "rgba(255,252,240,0.8)",
+            border: "1.5px solid rgba(184,134,11,0.2)",
+          }}>
+            <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(99,102,241,0.1)", border: "1.5px solid rgba(99,102,241,0.2)" }}>
+              <span className="text-2xl">📚</span>
+            </div>
+            <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>Study First!</h3>
+            <p style={{ color: "#8b7355", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
+              You haven&apos;t completed any topics in this subject yet. Complete some topics in your study plan first, then come back for a mock test.
+            </p>
+            <a
+              href={`/plan/${subjectId}`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none",
+                background: `linear-gradient(135deg, ${subject.color}, ${subject.color}dd)`,
+                color: "#fff", fontWeight: 700, fontSize: "0.85rem",
+                textDecoration: "none", cursor: "pointer",
+                boxShadow: `0 4px 16px ${subject.color}30`,
+              }}
+            >
+              Go to Study Plan →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* LOADING */}
       {loading && (
         <div className="flex flex-col items-center py-24 gap-4">
           <Loader2 size={32} className="animate-spin text-indigo-400" />
-          <p className="text-slate-400">Examiner AI is preparing your test...</p>
-          <p className="text-slate-600 text-sm">Generating questions based on your study topics</p>
+          <p style={{ color: "#5a4a22" }}>Examiner AI is preparing your test...</p>
+          <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>Generating questions based on your completed topics</p>
         </div>
       )}
 
       {/* ERROR STATE */}
       {error && !loading && (
         <div className="max-w-md mx-auto py-16 text-center">
-          <div className="glass rounded-2xl p-8 border border-red-500/20">
+          <div style={{ padding: "2rem", borderRadius: "1.25rem", background: "rgba(255,252,240,0.8)", border: "1.5px solid rgba(192,57,43,0.2)" }}>
             <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">⚠️</span>
             </div>
-            <h3 className="text-white font-semibold mb-2">Failed to Generate Test</h3>
-            <p className="text-red-400 text-sm mb-4">{error}</p>
-            <button onClick={generateTest} className="btn-primary text-sm py-2 px-6" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+            <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>Failed to Generate Test</h3>
+            <p style={{ color: "#c0392b", fontSize: "0.85rem", marginBottom: "1.25rem" }}>{error}</p>
+            <button
+              onClick={() => { setNoProgress(false); setError(null); window.location.reload(); }}
+              style={{
+                padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none",
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                color: "#fff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer",
+              }}
+            >
               Try Again
             </button>
           </div>

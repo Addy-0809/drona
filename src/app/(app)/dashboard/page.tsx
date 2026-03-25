@@ -1,13 +1,22 @@
 "use client";
 // src/app/(app)/dashboard/page.tsx
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  BookOpen, Youtube, ClipboardList, BarChart2,
+  BookOpen, Youtube, ClipboardList,
   FileUp, ArrowRight, Sparkles, GraduationCap,
-  Brain, Target, TrendingUp,
+  Brain, Target, TrendingUp, CheckCircle2, BarChart3,
 } from "lucide-react";
+import { getSubjectById } from "@/lib/subjects";
+
+interface SubjectProgress {
+  completedTopics: string[];
+  totalStudied: number;
+  subjectName: string | null;
+  updatedAt: string | null;
+}
 
 const quickActions = [
   {
@@ -84,9 +93,43 @@ const steps = [
 export default function DashboardPage() {
   const { data: session } = useSession();
   const firstName = session?.user?.name?.split(" ")[0] ?? "Student";
+  const [progressMap, setProgressMap] = useState<Record<string, SubjectProgress>>({});
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
+  // Fetch all-subjects progress on mount
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    const fetchProgress = async () => {
+      try {
+        const res = await fetch("/api/progress");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.progress) {
+            setProgressMap(data.progress);
+          }
+        }
+      } catch {
+        // Non-fatal
+      } finally {
+        setProgressLoaded(true);
+      }
+    };
+    fetchProgress();
+  }, [session?.user?.email]);
+
+  const studiedSubjects = Object.entries(progressMap)
+    .filter(([, info]) => info.totalStudied > 0)
+    .sort((a, b) => {
+      // Sort by most recently updated
+      const dateA = a[1].updatedAt ? new Date(a[1].updatedAt).getTime() : 0;
+      const dateB = b[1].updatedAt ? new Date(b[1].updatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+  const totalTopicsCompleted = studiedSubjects.reduce((sum, [, info]) => sum + info.totalStudied, 0);
 
   return (
     <div style={{ minHeight: "100vh" }}>
@@ -141,10 +184,219 @@ export default function DashboardPage() {
             </span>
           </h1>
           <p style={{ color: "#8b7355", fontSize: "1rem", maxWidth: "500px" }}>
-            What would you like to study today? Pick up where you left off or start something new.
+            {studiedSubjects.length > 0
+              ? `You're studying ${studiedSubjects.length} subject${studiedSubjects.length > 1 ? "s" : ""} with ${totalTopicsCompleted} topics completed. Keep going!`
+              : "What would you like to study today? Pick up where you left off or start something new."
+            }
           </p>
         </div>
       </motion.div>
+
+      {/* YOUR PROGRESS SECTION — only shown when user has studied at least 1 subject */}
+      {progressLoaded && studiedSubjects.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          style={{ marginBottom: "2.5rem" }}
+        >
+          {/* Section header */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1.25rem" }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              background: "linear-gradient(135deg, #10b981, #14b8a6)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <BarChart3 size={16} color="#fff" />
+            </div>
+            <h2 style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontWeight: 800,
+              fontSize: "1.2rem",
+              color: "#3d2f0d",
+              margin: 0,
+            }}>
+              Your Progress
+            </h2>
+            <span style={{
+              marginLeft: "auto",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              color: "#10b981",
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.15)",
+              padding: "3px 10px",
+              borderRadius: "2rem",
+            }}>
+              {totalTopicsCompleted} topics completed
+            </span>
+          </div>
+
+          {/* Subject progress cards */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1rem",
+          }}>
+            {studiedSubjects.map(([sid, info], i) => {
+              const subject = getSubjectById(sid);
+              const subjectColor = subject?.color || "#6366f1";
+              const subjectIcon = subject?.icon || "📘";
+              const subjectShortName = subject?.shortName || info.subjectName || sid;
+
+              return (
+                <motion.div
+                  key={sid}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.06 }}
+                  style={{
+                    padding: "1.25rem 1.5rem",
+                    borderRadius: "1.25rem",
+                    background: "rgba(255,252,240,0.7)",
+                    border: `1.5px solid ${subjectColor}20`,
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget;
+                    el.style.transform = "translateY(-3px)";
+                    el.style.borderColor = subjectColor + "40";
+                    el.style.boxShadow = `0 8px 30px ${subjectColor}12, 0 2px 8px rgba(0,0,0,0.03)`;
+                    el.style.background = "rgba(255,252,240,0.95)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget;
+                    el.style.transform = "translateY(0)";
+                    el.style.borderColor = subjectColor + "20";
+                    el.style.boxShadow = "none";
+                    el.style.background = "rgba(255,252,240,0.7)";
+                  }}
+                >
+                  {/* Top row: icon + name + topic count */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                    <span style={{ fontSize: "1.5rem" }}>{subjectIcon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontFamily: "'Outfit', sans-serif",
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        color: "#3d2f0d",
+                        margin: 0,
+                      }}>
+                        {subjectShortName}
+                      </p>
+                    </div>
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "2px 8px",
+                      borderRadius: "0.5rem",
+                      background: `${subjectColor}10`,
+                      border: `1px solid ${subjectColor}20`,
+                    }}>
+                      <CheckCircle2 size={12} style={{ color: subjectColor }} />
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: subjectColor }}>
+                        {info.totalStudied} topics
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Recent topics */}
+                  {info.completedTopics.length > 0 && (
+                    <div style={{ marginBottom: "12px" }}>
+                      <div style={{
+                        display: "flex", flexWrap: "wrap", gap: "4px",
+                      }}>
+                        {info.completedTopics.slice(0, 3).map((topic, idx) => (
+                          <span key={idx} style={{
+                            fontSize: "0.7rem",
+                            fontWeight: 500,
+                            color: "#8b7355",
+                            background: "rgba(184,134,11,0.06)",
+                            border: "1px solid rgba(184,134,11,0.1)",
+                            padding: "2px 8px",
+                            borderRadius: "0.4rem",
+                            maxWidth: "150px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {topic}
+                          </span>
+                        ))}
+                        {info.completedTopics.length > 3 && (
+                          <span style={{
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            color: "#a0845e",
+                            padding: "2px 6px",
+                          }}>
+                            +{info.completedTopics.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Link
+                      href={`/plan/${sid}`}
+                      style={{
+                        flex: 1,
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                        padding: "0.45rem 0.75rem",
+                        borderRadius: "0.65rem",
+                        background: `linear-gradient(135deg, ${subjectColor}, ${subjectColor}dd)`,
+                        color: "#fff",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        boxShadow: `0 2px 10px ${subjectColor}25`,
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <ClipboardList size={12} /> Continue
+                    </Link>
+                    <Link
+                      href={`/test/${sid}`}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
+                        padding: "0.45rem 0.75rem",
+                        borderRadius: "0.65rem",
+                        background: "rgba(245,158,11,0.08)",
+                        border: "1px solid rgba(245,158,11,0.2)",
+                        color: "#f59e0b",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <Target size={12} /> Test
+                    </Link>
+                  </div>
+
+                  {/* Updated time */}
+                  {info.updatedAt && (
+                    <p style={{
+                      margin: "8px 0 0",
+                      fontSize: "0.68rem",
+                      color: "#b8a080",
+                    }}>
+                      Last studied: {new Date(info.updatedAt).toLocaleDateString("en-IN", {
+                        day: "numeric", month: "short",
+                      })}
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
       {/* QUICK ACTION CARDS */}
       <div style={{
@@ -158,7 +410,7 @@ export default function DashboardPage() {
             key={action.id}
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06, type: "spring", stiffness: 200 }}
+            transition={{ delay: (studiedSubjects.length > 0 ? 0.3 : 0) + i * 0.06, type: "spring", stiffness: 200 }}
           >
             <Link
               href={action.href}
@@ -252,7 +504,7 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: studiedSubjects.length > 0 ? 0.6 : 0.5 }}
         style={{
           padding: "2rem",
           borderRadius: "1.5rem",
@@ -289,7 +541,7 @@ export default function DashboardPage() {
               key={step.num}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 + i * 0.06 }}
+              transition={{ delay: (studiedSubjects.length > 0 ? 0.7 : 0.6) + i * 0.06 }}
               style={{
                 padding: "1.25rem",
                 borderRadius: "1rem",

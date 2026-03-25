@@ -7,6 +7,32 @@ import { textModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
+/**
+ * Sanitize AI-generated JSON text to prevent "Bad control character" errors.
+ */
+function sanitizeJsonText(raw: string): string {
+  let text = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  text = text.replace(/[\uFEFF\u200B\u200C\u200D\u2060]/g, "");
+  text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+  let result = "";
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { result += ch; escape = false; continue; }
+    if (ch === "\\" && inString) { result += ch; escape = true; continue; }
+    if (ch === '"') { inString = !inString; result += ch; continue; }
+    if (inString) {
+      if (ch === "\n") { result += "\\n"; continue; }
+      if (ch === "\r") { result += "\\r"; continue; }
+      if (ch === "\t") { result += "\\t"; continue; }
+    }
+    result += ch;
+  }
+  result = result.replace(/,\s*([}\]])/g, "$1");
+  return result;
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Auth.js v5: ensure cookie context is available for session resolution
@@ -73,7 +99,7 @@ Requirements:
 
     const result = await textModel.generateContent(prompt);
     const text = result.response.text().trim();
-    const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const jsonText = sanitizeJsonText(text);
     const plan = JSON.parse(jsonText);
 
     // Try to save to Firestore (optional — works without it)
