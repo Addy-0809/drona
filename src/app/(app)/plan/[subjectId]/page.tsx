@@ -49,6 +49,22 @@ export default function PlanPage() {
   // Map from topic ID -> topic name for human-readable names
   const [topicNameMap, setTopicNameMap] = useState<Record<string, string>>({});
 
+  // SessionStorage key for this user+subject (instant cache for back-navigation)
+  const sessionKey = progressDocId ? `plan_cache_${progressDocId}` : null;
+
+  // Helper: save current state to sessionStorage for instant back-navigation
+  const saveToSession = useCallback((planData: Plan, pId: string | null, completed: Set<string>, nameMap: Record<string, string>) => {
+    if (!sessionKey) return;
+    try {
+      sessionStorage.setItem(sessionKey, JSON.stringify({
+        plan: planData,
+        planId: pId,
+        completedTopicIds: Array.from(completed),
+        topicNameMap: nameMap,
+      }));
+    } catch { /* sessionStorage quota or unavailable — non-fatal */ }
+  }, [sessionKey]);
+
   // Save progress to Firestore
   // Accept nameMap explicitly to avoid stale closure when called right after setTopicNameMap
   const saveProgress = useCallback(async (
@@ -93,7 +109,32 @@ export default function PlanPage() {
     setLoading(true);
     setError(null);
     try {
-      // Try loading from Firestore cache first (non-fatal if it fails)
+      // 1) Try sessionStorage first — instant, no network (handles back-navigation)
+      if (sessionKey) {
+        try {
+          const cached = sessionStorage.getItem(sessionKey);
+          if (cached) {
+            const data = JSON.parse(cached);
+            if (data.plan) {
+              setPlan(data.plan as Plan);
+              setPlanId(data.planId || null);
+              const ids = (data.completedTopicIds || []) as string[];
+              if (ids.length > 0) setCompletedTopics(new Set(ids));
+              if (data.topicNameMap) setTopicNameMap(data.topicNameMap);
+              else {
+                const nm: Record<string, string> = {};
+                (data.plan as Plan).weeks.forEach(w => w.topics.forEach(t => { nm[t.id] = t.name; }));
+                setTopicNameMap(nm);
+              }
+              console.log('[plan] Loaded from sessionStorage (instant)');
+              setLoading(false);
+              return;
+            }
+          }
+        } catch { /* sessionStorage unavailable — continue */ }
+      }
+
+      // 2) Try Firestore cache (non-fatal if it fails)
       if (progressDocId) {
         try {
           const docRef = doc(db, "progress", progressDocId);
@@ -114,11 +155,14 @@ export default function PlanPage() {
               setPlan(planData);
               setPlanId(data.planId as string || null);
               // Build name map from plan if not already stored
+              const nameMap: Record<string, string> = data.topicNameMap as Record<string, string> || {};
               if (!data.topicNameMap) {
-                const nameMap: Record<string, string> = {};
                 planData.weeks.forEach(w => w.topics.forEach(t => { nameMap[t.id] = t.name; }));
                 setTopicNameMap(nameMap);
               }
+              // Save to sessionStorage for future back-navigation
+              saveToSession(planData, data.planId as string || null, new Set(ids), nameMap);
+              console.log('[plan] Loaded from Firestore cache');
               setLoading(false);
               return; // Use cached plan
             }
@@ -129,7 +173,7 @@ export default function PlanPage() {
         }
       }
 
-      // No cached plan — generate with AI
+      // 3) No cached plan — generate with AI
       const res = await fetch("/api/agent/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,6 +193,8 @@ export default function PlanPage() {
       const nameMap: Record<string, string> = {};
       data.plan.weeks.forEach((w: Week) => w.topics.forEach((t: Topic) => { nameMap[t.id] = t.name; }));
       setTopicNameMap(nameMap);
+      // Cache in sessionStorage
+      saveToSession(data.plan, data.planId, completedTopics, nameMap);
       // Cache the generated plan in Firestore — pass nameMap explicitly to avoid stale closure
       saveProgress(completedTopics, data.plan, data.planId, nameMap);
     } catch (e) {
@@ -170,6 +216,10 @@ export default function PlanPage() {
       else next.add(topicId);
       // Save to Firestore
       saveProgress(next);
+      // Update sessionStorage cache with new completed topics
+      if (plan && sessionKey) {
+        saveToSession(plan, planId, next, topicNameMap);
+      }
       return next;
     });
   };
