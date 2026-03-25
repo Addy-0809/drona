@@ -232,18 +232,13 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Kalpvriksh background image with parallax — illuminated */}
+        {/* Kalpvriksh background image — static with golden illumination */}
         <motion.div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
           justifyContent:"center", pointerEvents:"none", zIndex:1, y: kalpY }}>
-          {/* Golden glow backdrop */}
-          <div style={{ position:"absolute", width:"600px", height:"600px", borderRadius:"50%",
-            background:"radial-gradient(circle, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 40%, transparent 70%)",
-            filter:"blur(40px)" }}/>
           <Image src="/kalpvriksh.png" alt="Kalpvriksh"
-            width={750} height={750}
-            style={{ objectFit:"contain", opacity:0.45,
-              filter:"drop-shadow(0 0 40px rgba(218,165,32,0.35)) drop-shadow(0 0 80px rgba(184,134,11,0.2))",
-              animation:"leafSway 6s ease-in-out infinite" }}
+            width={700} height={700}
+            style={{ objectFit:"contain", opacity:0.32,
+              filter:"drop-shadow(0 0 30px rgba(218,165,32,0.3)) drop-shadow(0 0 60px rgba(184,134,11,0.15))" }}
             priority/>
         </motion.div>
 
