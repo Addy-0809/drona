@@ -197,7 +197,7 @@ export default function PlanPage() {
       const next = new Set(prev);
       if (next.has(topicId)) next.delete(topicId);
       else next.add(topicId);
-      saveProgress(next);
+      saveProgress(next, plan, planId, topicNameMap);
       if (plan && sessionKey) saveToSession(plan, planId, next, topicNameMap);
       return next;
     });

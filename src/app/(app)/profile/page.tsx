@@ -79,13 +79,20 @@ const ACHIEVEMENTS = [
 
 /* ─────────────── Page ─────────────── */
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session?.user?.email) return;
+    // Still hydrating — keep spinner, don't fetch yet
+    if (status === "loading") return;
+    // Not signed in — stop spinner, show nothing
+    if (status === "unauthenticated" || !session?.user?.email) {
+      setLoading(false);
+      return;
+    }
+    // Authenticated — fetch profile data
     (async () => {
       try {
         const res = await fetch("/api/profile");
@@ -98,7 +105,7 @@ export default function ProfilePage() {
         setLoading(false);
       }
     })();
-  }, [session?.user?.email]);
+  }, [status, session?.user?.email]);
 
   const firstName = session?.user?.name?.split(" ")[0] ?? "Student";
   const studiedSubjects = data

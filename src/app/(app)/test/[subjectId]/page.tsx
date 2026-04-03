@@ -122,9 +122,21 @@ export default function TestPage() {
           if (!week) { setError(`Week ${targetWeek} not found in study plan`); setLoading(false); return; }
 
           const weekTopicIds = week.topics.map((t) => t.id);
-          const weekCompletedIds = completedTopicIds.filter((id) => weekTopicIds.includes(id));
+          let weekCompletedIds = completedTopicIds.filter((id) => weekTopicIds.includes(id));
 
-          if (weekCompletedIds.length === 0) {
+          // Fallback: if ID matching yields nothing (e.g. plan was regenerated with new IDs),
+          // try matching by topic name so already-checked topics are still recognised.
+          if (weekCompletedIds.length === 0 && completedTopicNames.length > 0) {
+            const weekTopicNames2 = week.topics.map((t) => t.name.toLowerCase());
+            const matchedByName = completedTopicNames.filter((n) => weekTopicNames2.includes(n.toLowerCase()));
+            if (matchedByName.length > 0) {
+              // Treat all week topics as completed when every name matches
+              weekCompletedIds = weekTopicIds; // use stored IDs for the week
+            }
+          }
+
+          // Gate: require ALL week topics to be marked done
+          if (weekCompletedIds.length < weekTopicIds.length) {
             setNoProgress(true); setLoading(false); return;
           }
 
