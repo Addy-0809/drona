@@ -6,7 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import {
   LayoutDashboard, BookOpen, Youtube, ClipboardList,
-  BarChart2, FileUp, LogOut, Menu, X, ChevronDown,
+  BarChart2, FileUp, LogOut, Menu, X, ChevronDown, UserCircle2,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -117,12 +117,27 @@ export default function Navbar() {
                     <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5a4a22", marginBottom: "2px" }}>{session.user.name}</p>
                     <p style={{ fontSize: "0.72rem", color: "#9a8a5a" }}>{session.user.email}</p>
                   </div>
+                  {/* My Profile */}
+                  <Link
+                    id="profile-link"
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "8px",
+                      width: "100%", padding: "8px 10px", marginTop: "4px",
+                      background: "transparent", borderRadius: "8px",
+                      color: "#7c6a3a", fontSize: "0.82rem", fontWeight: 600,
+                      textDecoration: "none", transition: "background 0.15s",
+                    }}
+                  >
+                    <UserCircle2 size={14} /> My Profile
+                  </Link>
                   <button
                     id="signout-btn"
                     onClick={() => signOut({ callbackUrl: "/" })}
                     style={{
                       display: "flex", alignItems: "center", gap: "8px",
-                      width: "100%", padding: "8px 10px", marginTop: "4px",
+                      width: "100%", padding: "8px 10px", marginTop: "2px",
                       background: "transparent", border: "none", borderRadius: "8px",
                       cursor: "pointer", color: "#c0392b", fontSize: "0.82rem", fontWeight: 500,
                     }}>
@@ -169,14 +184,29 @@ export default function Navbar() {
               );
             })}
             {session?.user && (
-              <button onClick={() => signOut({ callbackUrl: "/" })} style={{
-                display: "flex", alignItems: "center", gap: "10px",
-                width: "100%", padding: "10px 14px", marginTop: "8px",
-                background: "rgba(192,57,43,0.07)", border: "none", borderRadius: "10px",
-                cursor: "pointer", color: "#c0392b", fontSize: "0.9rem", fontWeight: 500,
-              }}>
-                <LogOut size={16} /> Sign Out
-              </button>
+              <>
+                <Link
+                  href="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "10px 14px", borderRadius: "10px", marginBottom: "4px",
+                    color: pathname === "/profile" ? "#8B6914" : "#7c6a3a",
+                    background: pathname === "/profile" ? "rgba(184,134,11,0.12)" : "transparent",
+                    fontWeight: 600, fontSize: "0.9rem", textDecoration: "none",
+                  }}
+                >
+                  <UserCircle2 size={16} /> My Profile
+                </Link>
+                <button onClick={() => signOut({ callbackUrl: "/" })} style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  width: "100%", padding: "10px 14px", marginTop: "4px",
+                  background: "rgba(192,57,43,0.07)", border: "none", borderRadius: "10px",
+                  cursor: "pointer", color: "#c0392b", fontSize: "0.9rem", fontWeight: 500,
+                }}>
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </>
             )}
           </div>
         )}
