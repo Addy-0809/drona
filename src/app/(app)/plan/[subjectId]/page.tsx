@@ -5,10 +5,8 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getSubjectById } from "@/lib/subjects";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Youtube, Loader2, BookOpen, Trophy, Clock } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Youtube, Loader2, BookOpen, Trophy, Clock, ClipboardList } from "lucide-react";
 import Link from "next/link";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
 interface Topic {
   id: string;
@@ -42,17 +40,13 @@ export default function PlanPage() {
   const [expandedWeek, setExpandedWeek] = useState<number>(1);
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
 
-  // Firestore doc path for this user + subject
   const userEmail = session?.user?.email;
   const progressDocId = userEmail ? `${userEmail.replace(/[^a-zA-Z0-9]/g, "_")}_${subjectId}` : null;
 
-  // Map from topic ID -> topic name for human-readable names
   const [topicNameMap, setTopicNameMap] = useState<Record<string, string>>({});
 
-  // SessionStorage key for this user+subject (instant cache for back-navigation)
   const sessionKey = progressDocId ? `plan_cache_${progressDocId}` : null;
 
-  // Helper: save current state to sessionStorage for instant back-navigation
   const saveToSession = useCallback((planData: Plan, pId: string | null, completed: Set<string>, nameMap: Record<string, string>) => {
     if (!sessionKey) return;
     try {
@@ -65,51 +59,54 @@ export default function PlanPage() {
     } catch { /* sessionStorage quota or unavailable — non-fatal */ }
   }, [sessionKey]);
 
-  // Save progress to Firestore
-  // Accept nameMap explicitly to avoid stale closure when called right after setTopicNameMap
+  // Save progress via /api/progress (Admin SDK path — canonical, consistent with test page)
   const saveProgress = useCallback(async (
     completed: Set<string>,
     planData?: Plan | null,
     pId?: string | null,
     nameMap?: Record<string, string>,
   ) => {
-    if (!progressDocId) return;
+    if (!userEmail) return;
     try {
-      const docRef = doc(db, "progress", progressDocId);
-      // Use the explicitly passed nameMap, or fall back to state
       const resolvedNameMap = nameMap || topicNameMap;
       const completedArr = Array.from(completed);
       const completedNames = completedArr.map(id => resolvedNameMap[id] || id);
-      const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+
       const payload: Record<string, unknown> = {
-        completedTopics: completedNames, // Save names (used by mock test generation)
-        completedTopicIds: completedArr,   // Save IDs (used for UI state)
-        updatedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + SIXTY_DAYS_MS).toISOString(),
         subjectId,
         subjectName: subject?.name || subjectId,
+        completedTopics: completedNames,
+        completedTopicIds: completedArr,
       };
       if (planData) {
         payload.plan = planData;
-        // Build the topic name map from the plan
         const planNameMap: Record<string, string> = {};
         planData.weeks.forEach(w => w.topics.forEach(t => { planNameMap[t.id] = t.name; }));
         payload.topicNameMap = planNameMap;
       }
       if (pId) payload.planId = pId;
-      await setDoc(docRef, payload, { merge: true });
-      console.log('[progress] Saved to Firestore:', progressDocId, '| topics:', completedNames.length);
+
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("[progress] Save failed:", err);
+      } else {
+        console.log("[progress] Saved via API:", subjectId, "| topics:", completedNames.length);
+      }
     } catch (e) {
       console.error("Failed to save progress:", e);
     }
-  }, [progressDocId, subjectId, topicNameMap, subject?.name]);
+  }, [userEmail, subjectId, topicNameMap, subject?.name]);
 
-  // Load cached plan + progress from Firestore, then fetch from AI if needed
   const fetchPlan = async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1) Try sessionStorage first — instant, no network (handles back-navigation)
+      // 1) Try sessionStorage first — instant (handles back-navigation)
       if (sessionKey) {
         try {
           const cached = sessionStorage.getItem(sessionKey);
@@ -126,50 +123,40 @@ export default function PlanPage() {
                 (data.plan as Plan).weeks.forEach(w => w.topics.forEach(t => { nm[t.id] = t.name; }));
                 setTopicNameMap(nm);
               }
-              console.log('[plan] Loaded from sessionStorage (instant)');
+              console.log("[plan] Loaded from sessionStorage (instant)");
               setLoading(false);
               return;
             }
           }
-        } catch { /* sessionStorage unavailable — continue */ }
+        } catch { /* continue */ }
       }
 
-      // 2) Try Firestore cache (non-fatal if it fails)
-      if (progressDocId) {
+      // 2) Try /api/progress (Admin SDK — same as test page reads)
+      if (userEmail) {
         try {
-          const docRef = doc(db, "progress", progressDocId);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            // Use IDs for checkbox state (fallback to completedTopics for backward compat)
-            const ids = (data.completedTopicIds || data.completedTopics || []) as string[];
-            if (ids.length > 0) {
-              setCompletedTopics(new Set(ids));
-            }
-            // Restore topic name map if available
-            if (data.topicNameMap) {
-              setTopicNameMap(data.topicNameMap as Record<string, string>);
-            }
+          const res = await fetch(`/api/progress?subjectId=${subjectId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const ids = (data.completedTopicIds || []) as string[];
+            if (ids.length > 0) setCompletedTopics(new Set(ids));
+            if (data.topicNameMap) setTopicNameMap(data.topicNameMap);
             if (data.plan) {
               const planData = data.plan as Plan;
               setPlan(planData);
-              setPlanId(data.planId as string || null);
-              // Build name map from plan if not already stored
-              const nameMap: Record<string, string> = data.topicNameMap as Record<string, string> || {};
+              setPlanId(data.planId || null);
+              const nameMap: Record<string, string> = data.topicNameMap || {};
               if (!data.topicNameMap) {
                 planData.weeks.forEach(w => w.topics.forEach(t => { nameMap[t.id] = t.name; }));
                 setTopicNameMap(nameMap);
               }
-              // Save to sessionStorage for future back-navigation
-              saveToSession(planData, data.planId as string || null, new Set(ids), nameMap);
-              console.log('[plan] Loaded from Firestore cache');
+              saveToSession(planData, data.planId || null, new Set(ids), nameMap);
+              console.log("[plan] Loaded from /api/progress cache");
               setLoading(false);
-              return; // Use cached plan
+              return;
             }
           }
-        } catch (fsErr) {
-          console.warn("Firestore cache read failed (non-fatal):", fsErr);
-          // Continue to AI generation below
+        } catch (err) {
+          console.warn("Progress API read failed (non-fatal):", err);
         }
       }
 
@@ -184,18 +171,14 @@ export default function PlanPage() {
         throw new Error(errData.error || `API error ${res.status}`);
       }
       const data = await res.json();
-      if (!data.plan) {
-        throw new Error("No plan data received from AI");
-      }
+      if (!data.plan) throw new Error("No plan data received from AI");
       setPlan(data.plan);
       setPlanId(data.planId);
-      // Build topic name map from the new plan
       const nameMap: Record<string, string> = {};
       data.plan.weeks.forEach((w: Week) => w.topics.forEach((t: Topic) => { nameMap[t.id] = t.name; }));
       setTopicNameMap(nameMap);
-      // Cache in sessionStorage
       saveToSession(data.plan, data.planId, completedTopics, nameMap);
-      // Cache the generated plan in Firestore — pass nameMap explicitly to avoid stale closure
+      // Save full plan via API (same path the test page reads)
       saveProgress(completedTopics, data.plan, data.planId, nameMap);
     } catch (e) {
       console.error("Failed to load plan:", e);
@@ -214,12 +197,8 @@ export default function PlanPage() {
       const next = new Set(prev);
       if (next.has(topicId)) next.delete(topicId);
       else next.add(topicId);
-      // Save to Firestore
       saveProgress(next);
-      // Update sessionStorage cache with new completed topics
-      if (plan && sessionKey) {
-        saveToSession(plan, planId, next, topicNameMap);
-      }
+      if (plan && sessionKey) saveToSession(plan, planId, next, topicNameMap);
       return next;
     });
   };
@@ -233,7 +212,6 @@ export default function PlanPage() {
     <div style={{ minHeight: "100vh", padding: "2rem" }}>
       {/* HEADER */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "2rem" }}>
-        {/* Subject name + icon */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "0.5rem" }}>
           <div style={{
             width: 48, height: 48, borderRadius: 14,
@@ -275,10 +253,7 @@ export default function PlanPage() {
                 {completedTopics.size}/{totalTopics} topics
               </span>
             </div>
-            <div style={{
-              height: 8, borderRadius: 99, background: "rgba(184,134,11,0.08)",
-              overflow: "hidden",
-            }}>
+            <div style={{ height: 8, borderRadius: 99, background: "rgba(184,134,11,0.08)", overflow: "hidden" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPct}%` }}
@@ -293,14 +268,14 @@ export default function PlanPage() {
               <span style={{ color: "#a0845e", fontSize: "0.78rem" }}>{progressPct}% complete</span>
               {progressPct === 100 && (
                 <Link
-                  href={`/test/${subjectId}?planId=${planId}`}
+                  href={`/test/${subjectId}`}
                   style={{
                     display: "flex", alignItems: "center", gap: "4px",
                     color: "#10b981", fontSize: "0.78rem", fontWeight: 600,
                     textDecoration: "none",
                   }}
                 >
-                  <Trophy size={12} /> Take the test!
+                  <Trophy size={12} /> Take Full Syllabus Test!
                 </Link>
               )}
             </div>
@@ -321,14 +296,9 @@ export default function PlanPage() {
               borderTopColor: subject.color,
               animation: "spin 1s linear infinite",
             }} />
-            <BookOpen size={22} style={{
-              position: "absolute", inset: 0, margin: "auto",
-              color: subject.color,
-            }} />
+            <BookOpen size={22} style={{ position: "absolute", inset: 0, margin: "auto", color: subject.color }} />
           </div>
-          <p style={{ color: "#5a4a22", fontWeight: 600 }}>
-            Gemini AI is creating your personalised study plan...
-          </p>
+          <p style={{ color: "#5a4a22", fontWeight: 600 }}>Gemini AI is creating your personalised study plan...</p>
           <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>This may take 15–30 seconds</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -337,37 +307,13 @@ export default function PlanPage() {
       {/* ERROR STATE */}
       {error && !loading && (
         <div style={{ maxWidth: "420px", margin: "4rem auto", textAlign: "center" }}>
-          <div style={{
-            padding: "2rem",
-            borderRadius: "1.25rem",
-            background: "rgba(255,252,240,0.8)",
-            border: "1.5px solid rgba(192,57,43,0.2)",
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "rgba(192,57,43,0.08)",
-              border: "1.5px solid rgba(192,57,43,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 1rem",
-              fontSize: "1.5rem",
-            }}>⚠️</div>
-            <h3 style={{ color: "#3d2f0d", fontWeight: 700, marginBottom: "0.5rem", fontFamily: "'Outfit', sans-serif" }}>
-              Failed to Generate Plan
-            </h3>
+          <div style={{ padding: "2rem", borderRadius: "1.25rem", background: "rgba(255,252,240,0.8)", border: "1.5px solid rgba(192,57,43,0.2)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(192,57,43,0.08)", border: "1.5px solid rgba(192,57,43,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem", fontSize: "1.5rem" }}>⚠️</div>
+            <h3 style={{ color: "#3d2f0d", fontWeight: 700, marginBottom: "0.5rem", fontFamily: "'Outfit', sans-serif" }}>Failed to Generate Plan</h3>
             <p style={{ color: "#c0392b", fontSize: "0.85rem", marginBottom: "1.25rem" }}>{error}</p>
             <button
               onClick={fetchPlan}
-              style={{
-                padding: "0.6rem 1.5rem",
-                borderRadius: "0.75rem",
-                border: "none",
-                background: `linear-gradient(135deg, ${subject.color}, ${subject.color}dd)`,
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                cursor: "pointer",
-                boxShadow: `0 4px 16px ${subject.color}30`,
-              }}
+              style={{ padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none", background: `linear-gradient(135deg, ${subject.color}, ${subject.color}dd)`, color: "#fff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
             >
               Try Again
             </button>
@@ -383,6 +329,7 @@ export default function PlanPage() {
             const weekCompleted = weekTopicIds.filter((id) => completedTopics.has(id)).length;
             const weekPct = Math.round((weekCompleted / week.topics.length) * 100);
             const isOpen = expandedWeek === week.weekNumber;
+            const weekDone = weekPct === 100;
 
             return (
               <motion.div
@@ -393,9 +340,7 @@ export default function PlanPage() {
                 style={{
                   borderRadius: "1.25rem",
                   background: "rgba(255,252,240,0.7)",
-                  border: isOpen
-                    ? `1.5px solid ${subject.color}30`
-                    : "1.5px solid rgba(184,134,11,0.12)",
+                  border: isOpen ? `1.5px solid ${subject.color}30` : "1.5px solid rgba(184,134,11,0.12)",
                   overflow: "hidden",
                   transition: "border-color 0.3s",
                 }}
@@ -405,58 +350,60 @@ export default function PlanPage() {
                   id={`week-${week.weekNumber}-toggle`}
                   onClick={() => setExpandedWeek(isOpen ? 0 : week.weekNumber)}
                   style={{
-                    width: "100%",
-                    padding: "1.25rem 1.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
+                    width: "100%", padding: "1.25rem 1.5rem",
+                    display: "flex", alignItems: "center", gap: "1rem",
+                    background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
                   }}
                 >
                   {/* Week number badge */}
                   <div style={{
                     width: 44, height: 44, borderRadius: 12,
-                    background: `linear-gradient(135deg, ${subject.color}, ${subject.color}cc)`,
+                    background: weekDone
+                      ? "linear-gradient(135deg, #10b981, #14b8a6)"
+                      : `linear-gradient(135deg, ${subject.color}, ${subject.color}cc)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "#fff", fontWeight: 800, fontSize: "0.8rem",
-                    fontFamily: "'Outfit', sans-serif",
-                    flexShrink: 0,
-                    boxShadow: `0 4px 12px ${subject.color}25`,
+                    fontFamily: "'Outfit', sans-serif", flexShrink: 0,
+                    boxShadow: weekDone ? "0 4px 12px rgba(16,185,129,0.25)" : `0 4px 12px ${subject.color}25`,
+                    transition: "background 0.3s",
                   }}>
-                    W{week.weekNumber}
+                    {weekDone ? "✓" : `W${week.weekNumber}`}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontFamily: "'Outfit', sans-serif",
-                      fontWeight: 700,
-                      fontSize: "0.95rem",
-                      color: "#3d2f0d",
-                      marginBottom: "2px",
-                    }}>
+                    <p style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "0.95rem", color: "#3d2f0d", marginBottom: "2px" }}>
                       {week.title}
                     </p>
-                    <p style={{ color: "#8b7355", fontSize: "0.78rem", margin: 0 }}>
-                      {week.goal}
-                    </p>
+                    <p style={{ color: "#8b7355", fontSize: "0.78rem", margin: 0 }}>{week.goal}</p>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+                    {/* Week test button when 100% done */}
+                    {weekDone && (
+                      <Link
+                        href={`/test/${subjectId}?week=${week.weekNumber}`}
+                        onClick={(e) => e.stopPropagation()}
+                        id={`week-${week.weekNumber}-test-btn`}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: "5px",
+                          padding: "0.3rem 0.75rem",
+                          borderRadius: "0.6rem",
+                          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                          color: "#fff",
+                          fontSize: "0.72rem", fontWeight: 700,
+                          textDecoration: "none",
+                          boxShadow: "0 2px 10px rgba(99,102,241,0.3)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <ClipboardList size={11} /> Week {week.weekNumber} Test
+                      </Link>
+                    )}
                     <div style={{ textAlign: "right" }}>
-                      <p style={{ color: "#5a4a22", fontSize: "0.78rem", fontWeight: 600 }}>
-                        {weekCompleted}/{week.topics.length}
-                      </p>
-                      <p style={{ color: subject.color, fontSize: "0.72rem", fontWeight: 700 }}>
-                        {weekPct}%
-                      </p>
+                      <p style={{ color: "#5a4a22", fontSize: "0.78rem", fontWeight: 600 }}>{weekCompleted}/{week.topics.length}</p>
+                      <p style={{ color: weekDone ? "#10b981" : subject.color, fontSize: "0.72rem", fontWeight: 700 }}>{weekPct}%</p>
                     </div>
-                    {isOpen
-                      ? <ChevronUp size={16} style={{ color: "#a0845e" }} />
-                      : <ChevronDown size={16} style={{ color: "#a0845e" }} />
-                    }
+                    {isOpen ? <ChevronUp size={16} style={{ color: "#a0845e" }} /> : <ChevronDown size={16} style={{ color: "#a0845e" }} />}
                   </div>
                 </button>
 
@@ -464,10 +411,9 @@ export default function PlanPage() {
                 <div style={{ padding: "0 1.5rem 4px" }}>
                   <div style={{ height: 3, borderRadius: 99, background: "rgba(184,134,11,0.08)" }}>
                     <div style={{
-                      height: "100%", borderRadius: 99,
-                      width: `${weekPct}%`,
-                      background: `linear-gradient(135deg, ${subject.color}, ${subject.color}cc)`,
-                      transition: "width 0.4s ease",
+                      height: "100%", borderRadius: 99, width: `${weekPct}%`,
+                      background: weekDone ? "linear-gradient(135deg, #10b981, #14b8a6)" : `linear-gradient(135deg, ${subject.color}, ${subject.color}cc)`,
+                      transition: "width 0.4s ease, background 0.3s",
                     }} />
                   </div>
                 </div>
@@ -482,28 +428,17 @@ export default function PlanPage() {
                       transition={{ duration: 0.25 }}
                       style={{ overflow: "hidden" }}
                     >
-                      <div style={{
-                        padding: "0.75rem 1.5rem 1.5rem",
-                        borderTop: "1px solid rgba(184,134,11,0.08)",
-                        display: "flex", flexDirection: "column", gap: "0.6rem",
-                      }}>
+                      <div style={{ padding: "0.75rem 1.5rem 1.5rem", borderTop: "1px solid rgba(184,134,11,0.08)", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                         {week.topics.map((topic) => {
                           const done = completedTopics.has(topic.id);
                           return (
                             <div
                               key={topic.id}
                               style={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: "12px",
-                                padding: "0.9rem 1rem",
-                                borderRadius: "0.85rem",
-                                background: done
-                                  ? "rgba(16,185,129,0.06)"
-                                  : "rgba(255,252,240,0.5)",
-                                border: done
-                                  ? "1px solid rgba(16,185,129,0.2)"
-                                  : "1px solid rgba(184,134,11,0.08)",
+                                display: "flex", alignItems: "flex-start", gap: "12px",
+                                padding: "0.9rem 1rem", borderRadius: "0.85rem",
+                                background: done ? "rgba(16,185,129,0.06)" : "rgba(255,252,240,0.5)",
+                                border: done ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(184,134,11,0.08)",
                                 transition: "all 0.2s",
                               }}
                             >
@@ -511,11 +446,7 @@ export default function PlanPage() {
                               <button
                                 id={`topic-check-${topic.id}`}
                                 onClick={() => toggleTopic(topic.id)}
-                                style={{
-                                  marginTop: 2, flexShrink: 0,
-                                  background: "none", border: "none",
-                                  cursor: "pointer", padding: 0,
-                                }}
+                                style={{ marginTop: 2, flexShrink: 0, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                               >
                                 {done
                                   ? <CheckCircle2 size={20} style={{ color: "#10b981" }} />
@@ -525,49 +456,28 @@ export default function PlanPage() {
 
                               {/* Topic content */}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{
-                                  fontSize: "0.88rem",
-                                  fontWeight: 600,
-                                  color: done ? "#a0845e" : "#3d2f0d",
-                                  textDecoration: done ? "line-through" : "none",
-                                  marginBottom: "3px",
-                                  fontFamily: "'Outfit', sans-serif",
-                                }}>
+                                <p style={{ fontSize: "0.88rem", fontWeight: 600, color: done ? "#a0845e" : "#3d2f0d", textDecoration: done ? "line-through" : "none", marginBottom: "3px", fontFamily: "'Outfit', sans-serif" }}>
                                   Day {topic.day}: {topic.name}
                                 </p>
-                                <p style={{ color: "#8b7355", fontSize: "0.78rem", lineHeight: 1.5, margin: 0 }}>
-                                  {topic.description}
-                                </p>
-                                <div style={{
-                                  display: "flex", alignItems: "center", gap: "4px",
-                                  color: "#a0845e", fontSize: "0.72rem",
-                                  marginTop: "6px",
-                                }}>
-                                  <Clock size={11} />
-                                  ~{topic.estimatedHours}h
+                                <p style={{ color: "#8b7355", fontSize: "0.78rem", lineHeight: 1.5, margin: 0 }}>{topic.description}</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#a0845e", fontSize: "0.72rem", marginTop: "6px" }}>
+                                  <Clock size={11} />~{topic.estimatedHours}h
                                 </div>
                               </div>
 
                               {/* Video link */}
                               <Link
-                                href={`/resources/${topic.id}?topic=${encodeURIComponent(topic.name)}&subject=${encodeURIComponent(subject.name)}`}
+                                href={`/resources/${topic.id}?topic=${encodeURIComponent(topic.name)}&subject=${encodeURIComponent(subject.name)}&subjectId=${subjectId}`}
                                 id={`topic-resources-${topic.id}`}
                                 style={{
-                                  display: "flex", alignItems: "center", gap: "4px",
-                                  flexShrink: 0,
-                                  padding: "0.35rem 0.7rem",
-                                  borderRadius: "0.5rem",
-                                  background: "rgba(239,68,68,0.06)",
-                                  border: "1px solid rgba(239,68,68,0.15)",
-                                  color: "#ef4444",
-                                  fontSize: "0.72rem",
-                                  fontWeight: 600,
-                                  textDecoration: "none",
-                                  transition: "all 0.2s",
+                                  display: "flex", alignItems: "center", gap: "4px", flexShrink: 0,
+                                  padding: "0.35rem 0.7rem", borderRadius: "0.5rem",
+                                  background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
+                                  color: "#ef4444", fontSize: "0.72rem", fontWeight: 600,
+                                  textDecoration: "none", transition: "all 0.2s",
                                 }}
                               >
-                                <Youtube size={12} />
-                                Videos
+                                <Youtube size={12} />Videos
                               </Link>
                             </div>
                           );

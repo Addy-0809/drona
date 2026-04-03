@@ -1,10 +1,9 @@
 "use client";
 // src/app/(app)/resources/[topicId]/page.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ExternalLink, Youtube, Loader2, Clock, ArrowLeft } from "lucide-react";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { Youtube, Loader2, Clock, ArrowLeft, X, Play, Maximize2 } from "lucide-react";
 
 interface Video {
   videoId: string;
@@ -25,6 +24,17 @@ export default function ResourcesPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+
+  // Close modal on Escape key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") setSelectedVideo(null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   useEffect(() => {
     async function fetchVideos() {
@@ -46,25 +56,15 @@ export default function ResourcesPage() {
     <div style={{ minHeight: "100vh", padding: "2rem" }}>
       {/* HEADER */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "2rem" }}>
-        {/* Back link */}
         <button
           onClick={() => router.back()}
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            color: "#a0845e",
-            fontSize: "0.82rem",
-            fontWeight: 500,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            marginBottom: "1rem",
+            display: "inline-flex", alignItems: "center", gap: "6px",
+            color: "#a0845e", fontSize: "0.82rem", fontWeight: 500,
+            background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: "1rem",
           }}
         >
-          <ArrowLeft size={14} />
-          Back to Study Plan
+          <ArrowLeft size={14} /> Back to Study Plan
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "0.5rem" }}>
@@ -76,49 +76,22 @@ export default function ResourcesPage() {
           }}>
             <Youtube size={20} color="#fff" />
           </div>
-          <div>
-            <p style={{
-              color: "#ef4444",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginBottom: "2px",
-            }}>
-              Free Resources
-            </p>
-          </div>
+          <p style={{ color: "#ef4444", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Free Resources — Play in App
+          </p>
         </div>
-        <h1 style={{
-          fontFamily: "'Outfit', sans-serif",
-          fontSize: "clamp(1.5rem, 4vw, 2.25rem)",
-          fontWeight: 900,
-          color: "#3d2f0d",
-          marginBottom: "0.25rem",
-        }}>
+        <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(1.5rem, 4vw, 2.25rem)", fontWeight: 900, color: "#3d2f0d", marginBottom: "0.25rem" }}>
           {topic || "Resources"}
         </h1>
-        {subject && (
-          <p style={{ color: "#8b7355", fontSize: "0.9rem" }}>{subject}</p>
-        )}
+        {subject && <p style={{ color: "#8b7355", fontSize: "0.9rem" }}>{subject}</p>}
       </motion.div>
 
       {/* LOADING */}
       {loading && (
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          padding: "5rem 0", gap: "1rem",
-        }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "5rem 0", gap: "1rem" }}>
           <div style={{ position: "relative", width: 56, height: 56 }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: "50%",
-              border: "3px solid rgba(239,68,68,0.15)",
-              borderTopColor: "#ef4444",
-              animation: "spin 1s linear infinite",
-            }} />
-            <Youtube size={20} style={{
-              position: "absolute", inset: 0, margin: "auto", color: "#ef4444",
-            }} />
+            <div style={{ width: 56, height: 56, borderRadius: "50%", border: "3px solid rgba(239,68,68,0.15)", borderTopColor: "#ef4444", animation: "spin 1s linear infinite" }} />
+            <Youtube size={20} style={{ position: "absolute", inset: 0, margin: "auto", color: "#ef4444" }} />
           </div>
           <p style={{ color: "#5a4a22", fontWeight: 600 }}>Finding the best videos for you...</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -127,46 +100,30 @@ export default function ResourcesPage() {
 
       {/* ERROR */}
       {error && (
-        <div style={{
-          padding: "1.25rem 1.5rem",
-          borderRadius: "1rem",
-          background: "rgba(192,57,43,0.06)",
-          border: "1.5px solid rgba(192,57,43,0.2)",
-          color: "#c0392b",
-          fontSize: "0.88rem",
-          maxWidth: "500px",
-        }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderRadius: "1rem", background: "rgba(192,57,43,0.06)", border: "1.5px solid rgba(192,57,43,0.2)", color: "#c0392b", fontSize: "0.88rem", maxWidth: "500px" }}>
           {error}. Make sure your YouTube API key is configured.
         </div>
       )}
 
       {/* VIDEO GRID */}
       {!loading && !error && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: "1.25rem",
-        }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.25rem" }}>
           {videos.map((video, i) => (
-            <motion.a
+            <motion.div
               key={video.videoId}
-              href={video.url}
-              target="_blank"
-              rel="noopener noreferrer"
               id={`video-${video.videoId}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
+              onClick={() => setSelectedVideo(video)}
               style={{
-                display: "flex",
-                flexDirection: "column",
+                display: "flex", flexDirection: "column",
                 borderRadius: "1.25rem",
                 background: "rgba(255,252,240,0.7)",
                 border: "1.5px solid rgba(184,134,11,0.12)",
                 overflow: "hidden",
-                textDecoration: "none",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 cursor: "pointer",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               onMouseEnter={(e) => {
@@ -180,134 +137,68 @@ export default function ResourcesPage() {
                 el.style.boxShadow = "none";
               }}
             >
-              {/* Thumbnail — proper 16:9 */}
-              <div style={{
-                position: "relative",
-                width: "100%",
-                paddingTop: "56.25%", /* 16:9 ratio */
-                overflow: "hidden",
-                background: "#1a1a1a",
-              }}>
+              {/* Thumbnail — 16:9 */}
+              <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", overflow: "hidden", background: "#1a1a1a" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={video.thumbnail}
                   alt={video.title}
-                  style={{
-                    position: "absolute",
-                    top: 0, left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 {/* Play overlay */}
-                <div style={{
+                <div className="play-overlay" style={{
                   position: "absolute", inset: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "rgba(0,0,0,0.3)",
-                  opacity: 0,
-                  transition: "opacity 0.3s",
-                }}
-                  className="play-overlay"
-                >
+                  background: "rgba(0,0,0,0.4)", opacity: 0, transition: "opacity 0.3s",
+                }}>
                   <div style={{
-                    width: 52, height: 52, borderRadius: "50%",
+                    width: 56, height: 56, borderRadius: "50%",
                     background: "#ef4444",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "0 4px 20px rgba(239,68,68,0.5)",
+                    boxShadow: "0 4px 24px rgba(239,68,68,0.6)",
                   }}>
-                    <div style={{
-                      width: 0, height: 0,
-                      borderLeft: "18px solid white",
-                      borderTop: "11px solid transparent",
-                      borderBottom: "11px solid transparent",
-                      marginLeft: "3px",
-                    }} />
+                    <Play size={22} color="#fff" fill="#fff" style={{ marginLeft: 3 }} />
                   </div>
                 </div>
-                {/* YouTube badge */}
+                {/* In-app badge */}
                 <div style={{
                   position: "absolute", top: 10, right: 10,
-                  background: "rgba(0,0,0,0.7)",
-                  borderRadius: "6px",
+                  background: "rgba(0,0,0,0.75)", borderRadius: "6px",
                   padding: "3px 8px",
                   display: "flex", alignItems: "center", gap: "4px",
-                  fontSize: "0.68rem", fontWeight: 600,
-                  color: "#fff",
-                  backdropFilter: "blur(4px)",
+                  fontSize: "0.68rem", fontWeight: 700, color: "#fff", backdropFilter: "blur(4px)",
                 }}>
-                  <Youtube size={10} style={{ color: "#ef4444" }} />
-                  YouTube
+                  <Play size={9} fill="#ef4444" color="#ef4444" /> Play in App
                 </div>
               </div>
 
               {/* Content */}
-              <div style={{
-                padding: "1rem 1.25rem 1.25rem",
-                display: "flex", flexDirection: "column", gap: "6px",
-                flex: 1,
-              }}>
+              <div style={{ padding: "1rem 1.25rem 1.25rem", display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
                 <h3 style={{
-                  fontFamily: "'Outfit', sans-serif",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  color: "#3d2f0d",
-                  lineHeight: 1.4,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  margin: 0,
+                  fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "#3d2f0d",
+                  lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  overflow: "hidden", margin: 0,
                 }}>
                   {video.title}
                 </h3>
+                <p style={{ color: "#B8860B", fontSize: "0.78rem", fontWeight: 600, margin: 0 }}>{video.channel}</p>
                 <p style={{
-                  color: "#B8860B",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  margin: 0,
-                }}>
-                  {video.channel}
-                </p>
-                <p style={{
-                  color: "#8b7355",
-                  fontSize: "0.75rem",
-                  lineHeight: 1.5,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  flex: 1,
-                  margin: 0,
+                  color: "#8b7355", fontSize: "0.75rem", lineHeight: 1.5,
+                  display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  overflow: "hidden", flex: 1, margin: 0,
                 }}>
                   {video.description}
                 </p>
-
-                {/* Footer */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: "8px",
-                  paddingTop: "10px",
-                  borderTop: "1px solid rgba(184,134,11,0.1)",
-                }}>
-                  <span style={{
-                    display: "flex", alignItems: "center", gap: "4px",
-                    color: "#a0845e", fontSize: "0.72rem",
-                  }}>
-                    <Clock size={11} />
-                    {new Date(video.publishedAt).getFullYear()}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "10px", borderTop: "1px solid rgba(184,134,11,0.1)" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#a0845e", fontSize: "0.72rem" }}>
+                    <Clock size={11} /> {new Date(video.publishedAt).getFullYear()}
                   </span>
-                  <span style={{
-                    display: "flex", alignItems: "center", gap: "4px",
-                    color: "#ef4444", fontSize: "0.75rem", fontWeight: 600,
-                  }}>
-                    Watch <ExternalLink size={11} />
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "0.75rem", fontWeight: 600 }}>
+                    <Play size={11} /> Watch Now
                   </span>
                 </div>
               </div>
-            </motion.a>
+            </motion.div>
           ))}
         </div>
       )}
@@ -319,9 +210,111 @@ export default function ResourcesPage() {
       )}
 
       {/* Hover style for play overlay */}
-      <style>{`
-        a:hover .play-overlay { opacity: 1 !important; }
-      `}</style>
+      <style>{`div:hover .play-overlay { opacity: 1 !important; }`}</style>
+
+      {/* ── IN-APP VIDEO MODAL ── */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div
+            key="video-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setSelectedVideo(null)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 1000,
+              background: "rgba(0,0,0,0.88)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "1.5rem",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", maxWidth: 900,
+                borderRadius: "1.5rem",
+                background: "rgba(30,20,5,0.97)",
+                border: "1px solid rgba(239,68,68,0.2)",
+                overflow: "hidden",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)",
+              }}
+            >
+              {/* Modal header */}
+              <div style={{
+                display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+                padding: "1rem 1.25rem 0.75rem",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+              }}>
+                <div style={{ flex: 1, minWidth: 0, paddingRight: "1rem" }}>
+                  <p style={{ color: "#ef4444", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "3px" }}>
+                    <Youtube size={11} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
+                    {selectedVideo.channel}
+                  </p>
+                  <h3 style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "0.95rem", color: "#f5e9c8", margin: 0, lineHeight: 1.4 }}>
+                    {selectedVideo.title}
+                  </h3>
+                </div>
+                <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                  <a
+                    href={selectedVideo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in YouTube"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 34, height: 34, borderRadius: "0.5rem",
+                      background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.2)",
+                      color: "#ef4444", textDecoration: "none", transition: "background 0.2s",
+                    }}
+                  >
+                    <Maximize2 size={14} />
+                  </a>
+                  <button
+                    id="close-video-modal"
+                    onClick={() => setSelectedVideo(null)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 34, height: 34, borderRadius: "0.5rem",
+                      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#a0845e", cursor: "pointer", transition: "background 0.2s",
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* iframe player — 16:9 */}
+              <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", background: "#000" }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${selectedVideo.videoId}?autoplay=1&rel=0&modestbranding=1`}
+                  title={selectedVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  style={{
+                    position: "absolute", top: 0, left: 0,
+                    width: "100%", height: "100%",
+                    border: "none",
+                  }}
+                />
+              </div>
+
+              {/* Footer hint */}
+              <div style={{ padding: "0.6rem 1.25rem", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                <p style={{ color: "#6b5a3a", fontSize: "0.7rem", margin: 0 }}>
+                  Press <kbd style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 4, padding: "1px 5px", fontFamily: "monospace", fontSize: "0.68rem" }}>Esc</kbd> or click outside to close
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 // src/app/(app)/test/[subjectId]/page.tsx
-// Mock test taking page
+// Mock test taking page — supports ?week=N for per-week tests or full syllabus
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { getSubjectById } from "@/lib/subjects";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle2, Send } from "lucide-react";
+import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle2, Send, ClipboardList, BookOpen } from "lucide-react";
 
 interface MCQ {
   id: string;
@@ -34,11 +34,30 @@ interface Test {
   shortAnswers: ShortAnswer[];
 }
 
+interface Topic {
+  id: string;
+  name: string;
+  day: number;
+  description: string;
+  estimatedHours: number;
+}
+
+interface Week {
+  weekNumber: number;
+  title: string;
+  goal: string;
+  topics: Topic[];
+}
+
 export default function TestPage() {
   const { subjectId } = useParams<{ subjectId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const subject = getSubjectById(subjectId);
+
+  // week=N means only test week N topics; absent = full syllabus
+  const weekParam = searchParams.get("week");
+  const targetWeek = weekParam ? parseInt(weekParam, 10) : null;
 
   const [test, setTest] = useState<Test | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
@@ -51,6 +70,7 @@ export default function TestPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [noProgress, setNoProgress] = useState(false);
+  const [testLabel, setTestLabel] = useState("Mock Test");
 
   const generateTest = async (topics: string[]) => {
     setLoading(true);
@@ -66,9 +86,7 @@ export default function TestPage() {
         throw new Error(errData.error || `API error ${res.status}`);
       }
       const data = await res.json();
-      if (!data.test) {
-        throw new Error("No test data received from AI");
-      }
+      if (!data.test) throw new Error("No test data received from AI");
       setTest(data.test);
       setTestId(data.testId);
       setTimeLeft(data.test.duration * 60);
@@ -80,35 +98,57 @@ export default function TestPage() {
     }
   };
 
-  // Fetch actual completed topics, then generate test
+  // Fetch progress, then filter by week if needed, then generate test
   useEffect(() => {
     if (!subject) return;
     const init = async () => {
       try {
-        // Fetch progress from Firestore via our progress API
         const progressRes = await fetch(`/api/progress?subjectId=${subjectId}`);
-        if (progressRes.ok) {
-          const progressData = await progressRes.json();
-          const topics: string[] = progressData.completedTopics || [];
-          if (topics.length === 0) {
-            setNoProgress(true);
-            setLoading(false);
-            return;
-          }
-          generateTest(topics);
-        } else {
-          // If progress API fails, try with plan-based topics
-          setNoProgress(true);
-          setLoading(false);
+        if (!progressRes.ok) { setNoProgress(true); setLoading(false); return; }
+
+        const progressData = await progressRes.json();
+        const completedTopicIds: string[] = progressData.completedTopicIds || [];
+        const completedTopicNames: string[] = progressData.completedTopics || [];
+        const topicNameMap: Record<string, string> = progressData.topicNameMap || {};
+
+        if (completedTopicIds.length === 0 && completedTopicNames.length === 0) {
+          setNoProgress(true); setLoading(false); return;
         }
+
+        // If a specific week is requested, filter to only that week's topics
+        if (targetWeek !== null && progressData.plan) {
+          const plan = progressData.plan as { weeks: Week[] };
+          const week = plan.weeks.find((w) => w.weekNumber === targetWeek);
+          if (!week) { setError(`Week ${targetWeek} not found in study plan`); setLoading(false); return; }
+
+          const weekTopicIds = week.topics.map((t) => t.id);
+          const weekCompletedIds = completedTopicIds.filter((id) => weekTopicIds.includes(id));
+
+          if (weekCompletedIds.length === 0) {
+            setNoProgress(true); setLoading(false); return;
+          }
+
+          // Map IDs → names for the prompt
+          const weekTopicNames = weekCompletedIds.map(id => topicNameMap[id] || id);
+          setTestLabel(`Week ${targetWeek} Test`);
+          generateTest(weekTopicNames);
+          return;
+        }
+
+        // Full syllabus test — use stored topic names directly
+        const topics = completedTopicNames.length > 0
+          ? completedTopicNames
+          : completedTopicIds.map(id => topicNameMap[id] || id);
+
+        setTestLabel("Full Syllabus Test");
+        generateTest(topics);
       } catch {
-        // Fallback: still allow test generation with plan data from query params
         setNoProgress(true);
         setLoading(false);
       }
     };
     init();
-  }, [subjectId, subject]);
+  }, [subjectId, subject, targetWeek]);
 
   // Countdown timer
   useEffect(() => {
@@ -146,11 +186,34 @@ export default function TestPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-black" style={{ fontFamily: "'Outfit', sans-serif" }}>
-            <span className={`bg-gradient-to-r ${subject.gradient} bg-clip-text text-transparent`}>
-              {subject.shortName}
-            </span>{" "}Mock Test
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <h1 className="text-3xl font-black" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <span className={`bg-gradient-to-r ${subject.gradient} bg-clip-text text-transparent`}>
+                {subject.shortName}
+              </span>{" "}{testLabel}
+            </h1>
+            {/* Week badge */}
+            {targetWeek !== null && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "3px 12px", borderRadius: "2rem",
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                color: "#fff", fontSize: "0.72rem", fontWeight: 700,
+              }}>
+                <ClipboardList size={11} /> Week {targetWeek}
+              </span>
+            )}
+            {targetWeek === null && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "3px 12px", borderRadius: "2rem",
+                background: "linear-gradient(135deg, #10b981, #14b8a6)",
+                color: "#fff", fontSize: "0.72rem", fontWeight: 700,
+              }}>
+                <BookOpen size={11} /> Full Syllabus
+              </span>
+            )}
+          </div>
           {test && <p className="text-slate-400 text-sm mt-1">{test.totalMarks} marks · {test.duration} minutes</p>}
         </motion.div>
         {/* Timer */}
@@ -162,20 +225,20 @@ export default function TestPage() {
         )}
       </div>
 
-      {/* NO PROGRESS — redirect to study */}
+      {/* NO PROGRESS */}
       {noProgress && !loading && !error && (
         <div className="max-w-md mx-auto py-16 text-center">
-          <div style={{
-            padding: "2rem", borderRadius: "1.25rem",
-            background: "rgba(255,252,240,0.8)",
-            border: "1.5px solid rgba(184,134,11,0.2)",
-          }}>
+          <div style={{ padding: "2rem", borderRadius: "1.25rem", background: "rgba(255,252,240,0.8)", border: "1.5px solid rgba(184,134,11,0.2)" }}>
             <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(99,102,241,0.1)", border: "1.5px solid rgba(99,102,241,0.2)" }}>
               <span className="text-2xl">📚</span>
             </div>
-            <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>Study First!</h3>
+            <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>
+              {targetWeek ? `Complete Week ${targetWeek} First!` : "Study First!"}
+            </h3>
             <p style={{ color: "#8b7355", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-              You haven&apos;t completed any topics in this subject yet. Complete some topics in your study plan first, then come back for a mock test.
+              {targetWeek
+                ? `You haven't completed all topics in Week ${targetWeek} yet. Finish them, then come back for the test.`
+                : "You haven't completed any topics in this subject yet. Complete some topics in your study plan first, then come back for a mock test."}
             </p>
             <a
               href={`/plan/${subjectId}`}
@@ -198,7 +261,7 @@ export default function TestPage() {
       {loading && (
         <div className="flex flex-col items-center py-24 gap-4">
           <Loader2 size={32} className="animate-spin text-indigo-400" />
-          <p style={{ color: "#5a4a22" }}>Examiner AI is preparing your test...</p>
+          <p style={{ color: "#5a4a22" }}>Examiner AI is preparing your {targetWeek ? `Week ${targetWeek}` : "full syllabus"} test...</p>
           <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>Generating questions based on your completed topics</p>
         </div>
       )}
@@ -214,11 +277,7 @@ export default function TestPage() {
             <p style={{ color: "#c0392b", fontSize: "0.85rem", marginBottom: "1.25rem" }}>{error}</p>
             <button
               onClick={() => { setNoProgress(false); setError(null); window.location.reload(); }}
-              style={{
-                padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none",
-                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                color: "#fff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer",
-              }}
+              style={{ padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
             >
               Try Again
             </button>
@@ -261,7 +320,6 @@ export default function TestPage() {
                 const q = allQuestions[currentQ];
                 const isMCQ = q.type === "mcq";
                 const data = q.data;
-
                 return (
                   <>
                     <div className="flex items-start justify-between gap-4 mb-5">
@@ -321,19 +379,11 @@ export default function TestPage() {
             <span className="text-slate-500 text-sm">{answeredCount}/{allQuestions.length} answered</span>
 
             {currentQ < allQuestions.length - 1 ? (
-              <button
-                id="next-question"
-                onClick={() => setCurrentQ((q) => q + 1)}
-                className="btn-primary"
-              >
+              <button id="next-question" onClick={() => setCurrentQ((q) => q + 1)} className="btn-primary">
                 Next <ChevronRight size={16} />
               </button>
             ) : (
-              <button
-                id="submit-test"
-                onClick={handleSubmit}
-                className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-600"
-              >
+              <button id="submit-test" onClick={handleSubmit} className="btn-primary bg-gradient-to-r from-emerald-500 to-teal-600">
                 <Send size={16} /> Submit Test
               </button>
             )}
