@@ -17,12 +17,13 @@ export async function GET() {
 
     const db = adminDb();
     if (!db) {
+      // Return empty profile rather than crashing
       return NextResponse.json({ progress: {}, tests: [] });
     }
 
     const safeEmail = userEmail.replace(/[^a-zA-Z0-9]/g, "_");
 
-    // 1) All subject progress docs for this user
+    // ── 1. All subject progress docs (same proven query pattern as /api/progress) ──
     const progressSnap = await db
       .collection("progress")
       .where("__name__", ">=", safeEmail + "_")
@@ -34,8 +35,9 @@ export async function GET() {
       totalStudied: number;
       subjectName: string | null;
       updatedAt: string | null;
-      plan: unknown | null;
+      plan: unknown;
       totalTopicsInPlan: number;
+      currentWeek: number;
     }> = {};
 
     progressSnap.docs.forEach((doc) => {
@@ -43,7 +45,7 @@ export async function GET() {
       const sid = d.subjectId as string;
       if (!sid) return;
 
-      // Count total topics in plan for percentage
+      // Count total topics in plan
       let totalTopicsInPlan = 0;
       if (d.plan?.weeks) {
         for (const w of d.plan.weeks) {
@@ -51,15 +53,17 @@ export async function GET() {
         }
       }
 
-      // Determine which week the student is currently on
+      // Determine current week
       let currentWeek = 1;
-      if (d.plan?.weeks && d.completedTopicIds?.length > 0) {
-        const completedSet = new Set(d.completedTopicIds as string[]);
+      const completedIds: string[] = d.completedTopicIds || [];
+      if (d.plan?.weeks && completedIds.length > 0) {
+        const completedSet = new Set(completedIds);
         for (const w of d.plan.weeks) {
           const weekIds = (w.topics || []).map((t: { id: string }) => t.id);
-          const weekDone = weekIds.every((id: string) => completedSet.has(id));
-          if (weekDone) currentWeek = w.weekNumber + 1;
+          const weekDone = weekIds.length > 0 && weekIds.every((id: string) => completedSet.has(id));
+          if (weekDone) currentWeek = (w.weekNumber as number) + 1;
         }
+        if (d.plan?.totalWeeks) currentWeek = Math.min(currentWeek, d.plan.totalWeeks as number);
       }
 
       progress[sid] = {
@@ -69,75 +73,95 @@ export async function GET() {
         updatedAt: d.updatedAt || null,
         plan: d.plan || null,
         totalTopicsInPlan,
-      };
-      // Add currentWeek separately to avoid type issues
-      (progress[sid] as Record<string, unknown>).currentWeek = Math.min(
         currentWeek,
-        d.plan?.totalWeeks || currentWeek
-      );
+      };
     });
 
-    // 2) All test records for this user (sorted desc by creation)
-    const testsSnap = await db
-      .collection("tests")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get();
+    // ── 2. Test records — simple where query, no orderBy (avoids missing composite index) ──
+    let tests: Array<{
+      testId: string;
+      subjectId: string | null;
+      subjectName: string | null;
+      createdAt: string | null;
+      topicsCount: number;
+      totalMarks: number;
+      weekNumber: number | null;
+      hasFeedback: boolean;
+      score: number | null;
+      percentage: number | null;
+      grade: string | null;
+    }> = [];
 
-    // 3) Fetch feedback/scores for each test (batch)
-    const testIds = testsSnap.docs.map((d) => d.id);
-    const feedbackMap: Record<string, { score?: number; grade?: string; percentage?: number }> = {};
+    try {
+      const testsSnap = await db
+        .collection("tests")
+        .where("userId", "==", userId)
+        .limit(50)
+        .get();
 
-    if (testIds.length > 0) {
-      // Firestore `in` is limited to 30 at a time
-      const chunks = [];
-      for (let i = 0; i < testIds.length; i += 30) {
-        chunks.push(testIds.slice(i, i + 30));
-      }
-      for (const chunk of chunks) {
-        try {
-          const fbSnap = await db
-            .collection("testResults")
-            .where("__name__", "in", chunk)
-            .get();
-          fbSnap.docs.forEach((doc) => {
-            const fb = doc.data().feedback;
-            if (fb) {
-              feedbackMap[doc.id] = {
-                score: fb.percentage,
-                percentage: fb.percentage,
-                grade: fb.grade,
-              };
-            }
-          });
-        } catch {
-          // Non-fatal — feedback may not exist
+      // ── 3. Fetch feedback scores (batch, no index needed) ──
+      const testIds = testsSnap.docs.map((d) => d.id);
+      const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
+
+      if (testIds.length > 0) {
+        // Chunk into ≤30 for Firestore `in` limit
+        for (let i = 0; i < testIds.length; i += 30) {
+          const chunk = testIds.slice(i, i + 30);
+          try {
+            const fbSnap = await db
+              .collection("testResults")
+              .where("__name__", "in", chunk)
+              .get();
+            fbSnap.docs.forEach((doc) => {
+              const fb = doc.data()?.feedback;
+              if (fb) feedbackMap[doc.id] = { percentage: fb.percentage, grade: fb.grade };
+            });
+          } catch {
+            // Non-fatal — feedback collection may not exist yet
+          }
         }
       }
+
+      tests = testsSnap.docs.map((doc) => {
+        const d = doc.data();
+        const fb = feedbackMap[doc.id];
+        const weekMatch = (d.test?.title as string | undefined)?.match(/week\s*(\d+)/i);
+        const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
+        // createdAt may be a Firestore Timestamp or ISO string
+        const createdAtRaw = d.createdAt;
+        let createdAt: string | null = null;
+        if (createdAtRaw?.toDate) {
+          createdAt = (createdAtRaw.toDate() as Date).toISOString();
+        } else if (typeof createdAtRaw === "string") {
+          createdAt = createdAtRaw;
+        }
+
+        return {
+          testId: doc.id,
+          subjectId: d.subjectId || null,
+          subjectName: d.subjectName || null,
+          createdAt,
+          topicsCount: (d.completedTopics || []).length,
+          totalMarks: d.test?.totalMarks || 50,
+          weekNumber,
+          hasFeedback: !!fb,
+          score: fb?.percentage ?? null,
+          percentage: fb?.percentage ?? null,
+          grade: fb?.grade ?? null,
+        };
+      });
+
+      // Sort by createdAt desc in JS (avoids composite index requirement)
+      tests.sort((a, b) => {
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+    } catch (testErr) {
+      // If tests collection doesn't exist yet, just return empty
+      console.warn("[profile] tests query failed (non-fatal):", testErr);
     }
-
-    const tests = testsSnap.docs.map((doc) => {
-      const d = doc.data();
-      const fb = feedbackMap[doc.id];
-      // Determine if this is a week test or full syllabus
-      const weekMatch = d.test?.title?.match(/week\s*(\d+)/i);
-      const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
-
-      return {
-        testId: doc.id,
-        subjectId: d.subjectId || null,
-        subjectName: d.subjectName || null,
-        createdAt: d.createdAt?.toDate?.()?.toISOString() || null,
-        topicsCount: (d.completedTopics || []).length,
-        totalMarks: d.test?.totalMarks || 50,
-        weekNumber,
-        hasFeedback: !!fb,
-        score: fb?.score ?? null,
-        percentage: fb?.percentage ?? null,
-        grade: fb?.grade ?? null,
-      };
-    });
 
     return NextResponse.json({ progress, tests });
   } catch (err) {
