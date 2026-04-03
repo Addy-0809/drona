@@ -1,9 +1,9 @@
 "use client";
 // src/app/(app)/resources/[topicId]/page.tsx
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Youtube, Loader2, Clock, ArrowLeft, X, Play, Maximize2 } from "lucide-react";
+import { Youtube, Clock, ArrowLeft, X, Play, Maximize2, CheckCircle2 } from "lucide-react";
 
 interface Video {
   videoId: string;
@@ -16,15 +16,19 @@ interface Video {
 }
 
 export default function ResourcesPage() {
+  const { topicId } = useParams<{ topicId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const topic = searchParams.get("topic") || "";
   const subject = searchParams.get("subject") || "";
+  const subjectId = searchParams.get("subjectId") || "";
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [topicMarked, setTopicMarked] = useState(false); // true once progress saved
+  const markingRef = useRef(false); // prevent double-saves
 
   // Close modal on Escape key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -35,6 +39,63 @@ export default function ResourcesPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Auto-mark this topic as completed when a video is played
+  const markTopicComplete = useCallback(async () => {
+    if (!subjectId || !topicId || !topic || markingRef.current || topicMarked) return;
+    markingRef.current = true;
+    try {
+      // 1. Load existing progress so we preserve other completed topics
+      const existing = await fetch(`/api/progress?subjectId=${subjectId}`);
+      const prog = existing.ok ? await existing.json() : {};
+      const ids: string[] = prog.completedTopicIds || [];
+      const names: string[] = prog.completedTopics || [];
+      const nameMap: Record<string, string> = prog.topicNameMap || {};
+
+      // 2. Append this topic if not already present
+      if (!ids.includes(topicId)) {
+        ids.push(topicId);
+        names.push(topic);
+        nameMap[topicId] = topic;
+      }
+
+      // 3. Save back via API (merges with existing plan data)
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subjectId,
+          subjectName: subject,
+          completedTopics: names,
+          completedTopicIds: ids,
+          topicNameMap: nameMap,
+          // Preserve plan + planId if stored
+          ...(prog.plan ? { plan: prog.plan } : {}),
+          ...(prog.planId ? { planId: prog.planId } : {}),
+        }),
+      });
+      if (res.ok) {
+        setTopicMarked(true);
+        // Also update sessionStorage cache so plan page re-reads it instantly
+        try {
+          const cacheKey = `plan_cache_${(prog as { docId?: string })?.docId || subjectId}`;
+          const keys = Object.keys(sessionStorage);
+          // Find any key that ends with _subjectId pattern
+          const planKey = keys.find(k => k.includes(subjectId) && k.startsWith("plan_cache_"));
+          if (planKey) {
+            const cached = JSON.parse(sessionStorage.getItem(planKey) || "{}");
+            if (!cached.completedTopicIds?.includes(topicId)) {
+              cached.completedTopicIds = [...(cached.completedTopicIds || []), topicId];
+              cached.topicNameMap = { ...(cached.topicNameMap || {}), [topicId]: topic };
+              sessionStorage.setItem(planKey, JSON.stringify(cached));
+            }
+          }
+        } catch { /* non-fatal */ }
+      }
+    } catch (e) {
+      console.error("[resources] Failed to mark topic complete:", e);
+    }
+  }, [subjectId, topicId, topic, subject, topicMarked]);
 
   useEffect(() => {
     async function fetchVideos() {
@@ -51,6 +112,12 @@ export default function ResourcesPage() {
     }
     if (topic) fetchVideos();
   }, [topic, subject]);
+
+  // Helper: open video modal + trigger progress mark
+  const openVideo = (video: Video) => {
+    setSelectedVideo(video);
+    markTopicComplete(); // fire-and-forget
+  };
 
   return (
     <div style={{ minHeight: "100vh", padding: "2rem" }}>
@@ -84,6 +151,27 @@ export default function ResourcesPage() {
           {topic || "Resources"}
         </h1>
         {subject && <p style={{ color: "#8b7355", fontSize: "0.9rem" }}>{subject}</p>}
+
+        {/* Topic marked toast */}
+        <AnimatePresence>
+          {topicMarked && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                marginTop: "0.75rem",
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "0.5rem 1rem", borderRadius: "0.75rem",
+                background: "rgba(16,185,129,0.1)",
+                border: "1.5px solid rgba(16,185,129,0.25)",
+                color: "#10b981", fontSize: "0.82rem", fontWeight: 600,
+              }}
+            >
+              <CheckCircle2 size={15} /> Topic marked as studied! You can now take mock tests.
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* LOADING */}
@@ -115,7 +203,7 @@ export default function ResourcesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              onClick={() => setSelectedVideo(video)}
+              onClick={() => openVideo(video)}
               style={{
                 display: "flex", flexDirection: "column",
                 borderRadius: "1.25rem",
