@@ -76,18 +76,22 @@ export default function ResourcesPage() {
       });
       if (res.ok) {
         setTopicMarked(true);
-        // Also update sessionStorage cache so plan page re-reads it instantly
+        // Update sessionStorage cache so plan page shows this topic as complete
         try {
-          const cacheKey = `plan_cache_${(prog as { docId?: string })?.docId || subjectId}`;
           const keys = Object.keys(sessionStorage);
-          // Find any key that ends with _subjectId pattern
-          const planKey = keys.find(k => k.includes(subjectId) && k.startsWith("plan_cache_"));
-          if (planKey) {
-            const cached = JSON.parse(sessionStorage.getItem(planKey) || "{}");
-            if (!cached.completedTopicIds?.includes(topicId)) {
-              cached.completedTopicIds = [...(cached.completedTopicIds || []), topicId];
-              cached.topicNameMap = { ...(cached.topicNameMap || {}), [topicId]: topic };
-              sessionStorage.setItem(planKey, JSON.stringify(cached));
+          // Find ALL matching plan cache keys for this subjectId
+          const planKeys = keys.filter(k => k.includes(subjectId) && k.startsWith("plan_cache_"));
+          for (const planKey of planKeys) {
+            try {
+              const cached = JSON.parse(sessionStorage.getItem(planKey) || "{}");
+              if (!cached.completedTopicIds?.includes(topicId)) {
+                cached.completedTopicIds = [...(cached.completedTopicIds || []), topicId];
+                cached.topicNameMap = { ...(cached.topicNameMap || {}), [topicId]: topic };
+                sessionStorage.setItem(planKey, JSON.stringify(cached));
+              }
+            } catch {
+              // If the cache is corrupted, remove it so plan page re-fetches cleanly
+              sessionStorage.removeItem(planKey);
             }
           }
         } catch { /* non-fatal */ }
@@ -116,6 +120,16 @@ export default function ResourcesPage() {
   // Helper: open video modal + trigger progress mark
   const openVideo = (video: Video) => {
     setSelectedVideo(video);
+    // Immediately invalidate the plan page's sessionStorage cache so that when
+    // the user navigates back, the plan page is forced to re-read from Firestore
+    // (picking up the newly-completed topic) instead of using stale cached data.
+    if (subjectId) {
+      try {
+        Object.keys(sessionStorage)
+          .filter(k => k.startsWith("plan_cache_") && k.includes(subjectId))
+          .forEach(k => sessionStorage.removeItem(k));
+      } catch { /* non-fatal */ }
+    }
     markTopicComplete(); // fire-and-forget
   };
 

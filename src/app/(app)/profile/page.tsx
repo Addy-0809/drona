@@ -92,15 +92,26 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-    // Authenticated — fetch profile data
+    // Authenticated — fetch profile data (with one auto-retry for transient auth issues)
     (async () => {
-      try {
+      const attempt = async () => {
         const res = await fetch("/api/profile");
         if (!res.ok) throw new Error("Failed to load profile");
-        const json = await res.json();
+        return res.json();
+      };
+      try {
+        const json = await attempt();
         setData(json);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
+      } catch {
+        // One automatic retry after 1.5 s — handles transient session-cookie
+        // timing issues where the server isn't ready immediately.
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          const json = await attempt();
+          setData(json);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Unknown error");
+        }
       } finally {
         setLoading(false);
       }

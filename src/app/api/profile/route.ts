@@ -8,7 +8,19 @@ import { adminDb } from "@/lib/firebase-admin";
 export async function GET() {
   try {
     await headers();
-    const session = await auth();
+
+    // Wrap auth() in its own try/catch — if it throws (e.g. token mis-match,
+    // middleware timeout) we return a clean 401 instead of a 500 that the
+    // profile page displays as "Try Again".
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let session: any;
+    try {
+      session = await auth();
+    } catch (authErr) {
+      console.warn("[profile] auth() threw — returning 401:", authErr);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const userId = session?.user?.id ?? session?.user?.email;
     const userEmail = session?.user?.email;
     if (!userId || !userEmail) {

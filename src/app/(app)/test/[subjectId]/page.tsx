@@ -115,35 +115,43 @@ export default function TestPage() {
           setNoProgress(true); setLoading(false); return;
         }
 
-        // If a specific week is requested, filter to only that week's topics
-        if (targetWeek !== null && progressData.plan) {
-          const plan = progressData.plan as { weeks: Week[] };
-          const week = plan.weeks.find((w) => w.weekNumber === targetWeek);
-          if (!week) { setError(`Week ${targetWeek} not found in study plan`); setLoading(false); return; }
+        // Week-specific test requested
+        if (targetWeek !== null) {
+          // If plan is available, filter by that week's topics
+          if (progressData.plan) {
+            const plan = progressData.plan as { weeks: Week[] };
+            const week = plan.weeks.find((w) => w.weekNumber === targetWeek);
+            if (!week) { setError(`Week ${targetWeek} not found in study plan`); setLoading(false); return; }
 
-          const weekTopicIds = week.topics.map((t) => t.id);
-          let weekCompletedIds = completedTopicIds.filter((id) => weekTopicIds.includes(id));
+            const weekTopicIds = week.topics.map((t) => t.id);
+            const weekTopicNamesLC = week.topics.map((t) => t.name.toLowerCase());
 
-          // Fallback: if ID matching yields nothing (e.g. plan was regenerated with new IDs),
-          // try matching by topic name so already-checked topics are still recognised.
-          if (weekCompletedIds.length === 0 && completedTopicNames.length > 0) {
-            const weekTopicNames2 = week.topics.map((t) => t.name.toLowerCase());
-            const matchedByName = completedTopicNames.filter((n) => weekTopicNames2.includes(n.toLowerCase()));
-            if (matchedByName.length > 0) {
-              // Treat all week topics as completed when every name matches
-              weekCompletedIds = weekTopicIds; // use stored IDs for the week
+            // Strategy 1: match by exact topic IDs
+            const allIdsPresent = weekTopicIds.every(id => completedTopicIds.includes(id));
+
+            // Strategy 2: match by topic names (case-insensitive)
+            const nameMatchCount = completedTopicNames.filter(n => weekTopicNamesLC.includes(n.toLowerCase())).length;
+            const allNamesCovered = nameMatchCount >= weekTopicIds.length;
+
+            // Gate: ONLY block if NEITHER strategy can confirm all week topics are done
+            if (!allIdsPresent && !allNamesCovered) {
+              setNoProgress(true); setLoading(false); return;
             }
+
+            // Always use the plan's topic names for the prompt (most reliable for AI)
+            const weekTopicNames = week.topics.map(t => topicNameMap[t.id] || t.name);
+            setTestLabel(`Week ${targetWeek} Test`);
+            generateTest(weekTopicNames);
+            return;
           }
 
-          // Gate: require ALL week topics to be marked done
-          if (weekCompletedIds.length < weekTopicIds.length) {
-            setNoProgress(true); setLoading(false); return;
-          }
-
-          // Map IDs → names for the prompt
-          const weekTopicNames = weekCompletedIds.map(id => topicNameMap[id] || id);
+          // No plan data in Firestore — fall back to using all completed topics
+          // (treat it as a full test rather than blocking the user)
+          const topics = completedTopicNames.length > 0
+            ? completedTopicNames
+            : completedTopicIds.map(id => topicNameMap[id] || id);
           setTestLabel(`Week ${targetWeek} Test`);
-          generateTest(weekTopicNames);
+          generateTest(topics);
           return;
         }
 
