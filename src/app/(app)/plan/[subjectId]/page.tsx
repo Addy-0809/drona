@@ -266,18 +266,16 @@ export default function PlanPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
               <span style={{ color: "#a0845e", fontSize: "0.78rem" }}>{progressPct}% complete</span>
-              {progressPct === 100 && (
-                <Link
-                  href={`/test/${subjectId}`}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "4px",
-                    color: "#10b981", fontSize: "0.78rem", fontWeight: 600,
-                    textDecoration: "none",
-                  }}
-                >
-                  <Trophy size={12} /> Take Full Syllabus Test!
-                </Link>
-              )}
+              <Link
+                href={`/test/${subjectId}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  color: progressPct === 100 ? "#10b981" : "#6366f1", fontSize: "0.78rem", fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                <Trophy size={12} /> {progressPct === 100 ? "Full Syllabus Test!" : "Full Syllabus Test"}
+              </Link>
             </div>
           </div>
         )}
@@ -378,27 +376,25 @@ export default function PlanPage() {
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-                    {/* Week test button when 100% done */}
-                    {weekDone && (
-                      <Link
-                        href={`/test/${subjectId}?week=${week.weekNumber}`}
-                        onClick={(e) => e.stopPropagation()}
-                        id={`week-${week.weekNumber}-test-btn`}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: "5px",
-                          padding: "0.3rem 0.75rem",
-                          borderRadius: "0.6rem",
-                          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                          color: "#fff",
-                          fontSize: "0.72rem", fontWeight: 700,
-                          textDecoration: "none",
-                          boxShadow: "0 2px 10px rgba(99,102,241,0.3)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <ClipboardList size={11} /> Week {week.weekNumber} Test
-                      </Link>
-                    )}
+                    {/* Week test button — always visible */}
+                  <Link
+                    href={`/test/${subjectId}?week=${week.weekNumber}`}
+                    onClick={(e) => e.stopPropagation()}
+                    id={`week-${week.weekNumber}-test-btn`}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "5px",
+                      padding: "0.3rem 0.75rem",
+                      borderRadius: "0.6rem",
+                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      color: "#fff",
+                      fontSize: "0.72rem", fontWeight: 700,
+                      textDecoration: "none",
+                      boxShadow: "0 2px 10px rgba(99,102,241,0.3)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <ClipboardList size={11} /> Week {week.weekNumber} Test
+                  </Link>
                     <div style={{ textAlign: "right" }}>
                       <p style={{ color: "#5a4a22", fontSize: "0.78rem", fontWeight: 600 }}>{weekCompleted}/{week.topics.length}</p>
                       <p style={{ color: weekDone ? "#10b981" : subject.color, fontSize: "0.72rem", fontWeight: 700 }}>{weekPct}%</p>

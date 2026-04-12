@@ -77,9 +77,18 @@ export async function POST(req: NextRequest) {
     }
 
     const { subjectId, subjectName, completedTopics } = await req.json();
+
+    // Safety guard: topics must be provided (frontend always sends plan topics now)
+    if (!completedTopics || completedTopics.length === 0) {
+      return NextResponse.json(
+        { error: "No topics available to generate a test. Please open the study plan first so a plan can be created." },
+        { status: 400 }
+      );
+    }
+
     const topicList = completedTopics.join(", ");
 
-    const basePrompt = `You are a university exam paper setter. Create a comprehensive mock test for a student who has studied the following topics in ${subjectName}: ${topicList}.
+    const basePrompt = `You are a university exam paper setter. Create a comprehensive mock test covering the following topics in ${subjectName}: ${topicList}.
 
 Return ONLY valid JSON in this exact format:
 {

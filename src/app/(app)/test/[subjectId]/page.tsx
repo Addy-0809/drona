@@ -69,8 +69,8 @@ export default function TestPage() {
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [noProgress, setNoProgress] = useState(false);
   const [testLabel, setTestLabel] = useState("Mock Test");
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   const generateTest = async (topics: string[]) => {
     setLoading(true);
@@ -98,72 +98,71 @@ export default function TestPage() {
     }
   };
 
-  // Fetch progress, then filter by week if needed, then generate test
+  // Helper: fetch or generate a plan and return its topics for a given week (or all weeks)
+  // NOTE: Returns ALL topics regardless of completion status — no study gate.
+  const getTopicsFromPlan = async (weekNumber: number | null): Promise<string[]> => {
+    // 1. Try to fetch existing plan from progress API
+    try {
+      const progressRes = await fetch(`/api/progress?subjectId=${subjectId}`);
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        const topicNameMap: Record<string, string> = progressData.topicNameMap || {};
+
+        // If we have a plan stored, use ALL its topics (not just completed ones)
+        if (progressData.plan) {
+          const plan = progressData.plan as { weeks: Week[] };
+          if (weekNumber !== null) {
+            const week = plan.weeks.find((w) => w.weekNumber === weekNumber);
+            // Return all topics for this week regardless of completion
+            if (week) return week.topics.map(t => topicNameMap[t.id] || t.name);
+            // Week not found in plan — fall through to generate fresh plan below
+          } else {
+            // Full syllabus — all topics from plan
+            return plan.weeks.flatMap(w => w.topics.map(t => topicNameMap[t.id] || t.name));
+          }
+        }
+        // No plan stored at all — fall through to AI generation below
+      }
+    } catch {
+      // Non-fatal — fall through to AI generation
+    }
+
+    // 2. No stored plan — generate a fresh plan via AI and use all its topics
+    setLoadingMessage("Generating study plan first...");
+    const planRes = await fetch("/api/agent/plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subjectId, subjectName: subject?.name }),
+    });
+    if (!planRes.ok) throw new Error("Failed to generate study plan");
+    const planData = await planRes.json();
+    const plan = planData.plan as { weeks: Week[] };
+    if (!plan) throw new Error("No plan data received");
+
+    if (weekNumber !== null) {
+      const week = plan.weeks.find((w) => w.weekNumber === weekNumber);
+      if (!week) throw new Error(`Week ${weekNumber} not found in generated plan`);
+      return week.topics.map(t => t.name);
+    }
+    return plan.weeks.flatMap(w => w.topics.map(t => t.name));
+  };
+
+  // Fetch progress / plan topics, then generate test — no completion gate
   useEffect(() => {
     if (!subject) return;
     const init = async () => {
       try {
-        const progressRes = await fetch(`/api/progress?subjectId=${subjectId}`);
-        if (!progressRes.ok) { setNoProgress(true); setLoading(false); return; }
-
-        const progressData = await progressRes.json();
-        const completedTopicIds: string[] = progressData.completedTopicIds || [];
-        const completedTopicNames: string[] = progressData.completedTopics || [];
-        const topicNameMap: Record<string, string> = progressData.topicNameMap || {};
-
-        if (completedTopicIds.length === 0 && completedTopicNames.length === 0) {
-          setNoProgress(true); setLoading(false); return;
-        }
-
-        // Week-specific test requested
+        setLoadingMessage(targetWeek ? `Preparing Week ${targetWeek} test...` : "Preparing full syllabus test...");
+        const topics = await getTopicsFromPlan(targetWeek);
         if (targetWeek !== null) {
-          // If plan is available, filter by that week's topics
-          if (progressData.plan) {
-            const plan = progressData.plan as { weeks: Week[] };
-            const week = plan.weeks.find((w) => w.weekNumber === targetWeek);
-            if (!week) { setError(`Week ${targetWeek} not found in study plan`); setLoading(false); return; }
-
-            const weekTopicIds = week.topics.map((t) => t.id);
-            const weekTopicNamesLC = week.topics.map((t) => t.name.toLowerCase());
-
-            // Strategy 1: match by exact topic IDs
-            const allIdsPresent = weekTopicIds.every(id => completedTopicIds.includes(id));
-
-            // Strategy 2: match by topic names (case-insensitive)
-            const nameMatchCount = completedTopicNames.filter(n => weekTopicNamesLC.includes(n.toLowerCase())).length;
-            const allNamesCovered = nameMatchCount >= weekTopicIds.length;
-
-            // Gate: ONLY block if NEITHER strategy can confirm all week topics are done
-            if (!allIdsPresent && !allNamesCovered) {
-              setNoProgress(true); setLoading(false); return;
-            }
-
-            // Always use the plan's topic names for the prompt (most reliable for AI)
-            const weekTopicNames = week.topics.map(t => topicNameMap[t.id] || t.name);
-            setTestLabel(`Week ${targetWeek} Test`);
-            generateTest(weekTopicNames);
-            return;
-          }
-
-          // No plan data in Firestore — fall back to using all completed topics
-          // (treat it as a full test rather than blocking the user)
-          const topics = completedTopicNames.length > 0
-            ? completedTopicNames
-            : completedTopicIds.map(id => topicNameMap[id] || id);
           setTestLabel(`Week ${targetWeek} Test`);
-          generateTest(topics);
-          return;
+        } else {
+          setTestLabel("Full Syllabus Test");
         }
-
-        // Full syllabus test — use stored topic names directly
-        const topics = completedTopicNames.length > 0
-          ? completedTopicNames
-          : completedTopicIds.map(id => topicNameMap[id] || id);
-
-        setTestLabel("Full Syllabus Test");
+        setLoadingMessage("AI is generating your questions...");
         generateTest(topics);
-      } catch {
-        setNoProgress(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to prepare test");
         setLoading(false);
       }
     };
@@ -245,44 +244,14 @@ export default function TestPage() {
         )}
       </div>
 
-      {/* NO PROGRESS */}
-      {noProgress && !loading && !error && (
-        <div className="max-w-md mx-auto py-16 text-center">
-          <div style={{ padding: "2rem", borderRadius: "1.25rem", background: "rgba(255,252,240,0.8)", border: "1.5px solid rgba(184,134,11,0.2)" }}>
-            <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(99,102,241,0.1)", border: "1.5px solid rgba(99,102,241,0.2)" }}>
-              <span className="text-2xl">📚</span>
-            </div>
-            <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>
-              {targetWeek ? `Complete Week ${targetWeek} First!` : "Study First!"}
-            </h3>
-            <p style={{ color: "#8b7355", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-              {targetWeek
-                ? `You haven't completed all topics in Week ${targetWeek} yet. Finish them, then come back for the test.`
-                : "You haven't completed any topics in this subject yet. Complete some topics in your study plan first, then come back for a mock test."}
-            </p>
-            <a
-              href={`/plan/${subjectId}`}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none",
-                background: `linear-gradient(135deg, ${subject.color}, ${subject.color}dd)`,
-                color: "#fff", fontWeight: 700, fontSize: "0.85rem",
-                textDecoration: "none", cursor: "pointer",
-                boxShadow: `0 4px 16px ${subject.color}30`,
-              }}
-            >
-              Go to Study Plan →
-            </a>
-          </div>
-        </div>
-      )}
+
 
       {/* LOADING */}
       {loading && (
         <div className="flex flex-col items-center py-24 gap-4">
           <Loader2 size={32} className="animate-spin text-indigo-400" />
-          <p style={{ color: "#5a4a22" }}>Examiner AI is preparing your {targetWeek ? `Week ${targetWeek}` : "full syllabus"} test...</p>
-          <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>Generating questions based on your completed topics</p>
+          <p style={{ color: "#5a4a22" }}>{loadingMessage || (targetWeek ? `Preparing Week ${targetWeek} test...` : "Preparing full syllabus test...")}</p>
+          <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>Your personalised mock test will be ready shortly</p>
         </div>
       )}
 
@@ -296,7 +265,7 @@ export default function TestPage() {
             <h3 style={{ color: "#3d2f0d", fontWeight: 700, fontFamily: "'Outfit', sans-serif", marginBottom: 8 }}>Failed to Generate Test</h3>
             <p style={{ color: "#c0392b", fontSize: "0.85rem", marginBottom: "1.25rem" }}>{error}</p>
             <button
-              onClick={() => { setNoProgress(false); setError(null); window.location.reload(); }}
+              onClick={() => { setError(null); window.location.reload(); }}
               style={{ padding: "0.6rem 1.5rem", borderRadius: "0.75rem", border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
             >
               Try Again
