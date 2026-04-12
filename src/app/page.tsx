@@ -2,9 +2,9 @@
 // src/app/page.tsx — Drona Landing Page
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import Image from "next/image";
+
 
 /* ---- Subject chips with icons ---- */
 const subjects = [
@@ -33,37 +33,92 @@ const features = [
   { id: "paper",     icon: "📋", title: "Paper Analyser",       desc: "Upload a past university paper — Drona generates a matching mock paper in seconds." },
 ];
 
-/* ---- Archimedean Spiral SVG (floating, no background) ---- */
-function ArchimedeanSpiral({
-  size = 500,
-  opacity = 0.22,
-  speed = 30,
-  turns = 6,
-  color = "#B8860B",
+/* ---- Vortex Spiral — elongated shards arranged along Archimedean arms ---- */
+function VortexSpiral({
+  size = 800,
+  opacity = 0.28,
+  speed = 90,
   reverse = false,
 }: {
   size?: number;
   opacity?: number;
   speed?: number;
-  turns?: number;
-  color?: string;
   reverse?: boolean;
 }) {
-  // Generate spiral path points
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = size * 0.46;
-  const totalSteps = turns * 120;
-  const points: string[] = [];
-  for (let i = 0; i <= totalSteps; i++) {
-    const t = i / totalSteps;
-    const angle = t * turns * 2 * Math.PI;
-    const r = t * maxR;
-    const x = cx + r * Math.cos(angle);
-    const y = cy + r * Math.sin(angle);
-    points.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
+  const arms = 3;          // number of spiral arms
+  const shardsPerArm = 14; // shards along each arm
+  const maxR = size * 0.44;
+  const turns = 2.2;
+
+  // Gold palette
+  const colors = ["#B8860B", "#DAA520", "#C9A84C", "#8B6914", "#FFD700"];
+
+  const shards: React.ReactNode[] = [];
+
+  for (let arm = 0; arm < arms; arm++) {
+    const armOffset = (arm / arms) * 2 * Math.PI;
+    for (let s = 1; s <= shardsPerArm; s++) {
+      const t = s / shardsPerArm;                      // 0→1 along the arm
+      const angle = armOffset + t * turns * 2 * Math.PI;
+      const r = t * maxR;
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+
+      // Shard grows as it moves outward
+      const shardLen = 8 + t * 52;   // 8px inner → 60px outer
+      const shardW   = 2 + t * 9;
+
+      // Angle pointing radially outward + tangential tilt
+      const radialAngle = (angle * 180) / Math.PI + 85;
+
+      const colorIdx = (arm * shardsPerArm + s) % colors.length;
+      const col = colors[colorIdx];
+      const alpha = 0.35 + t * 0.55; // more opaque outward
+
+      shards.push(
+        <ellipse
+          key={`${arm}-${s}`}
+          cx={x}
+          cy={y}
+          rx={shardW / 2}
+          ry={shardLen / 2}
+          fill={col}
+          fillOpacity={alpha}
+          stroke={col}
+          strokeWidth="0.6"
+          strokeOpacity={alpha * 0.8}
+          transform={`rotate(${radialAngle}, ${x}, ${y})`}
+        />
+      );
+    }
   }
-  const d = points.join(" ");
+
+  // Subtle spiral guide path for each arm
+  const guidePaths: React.ReactNode[] = Array.from({ length: arms }, (_, arm) => {
+    const armOffset = (arm / arms) * 2 * Math.PI;
+    const steps = shardsPerArm * 8;
+    const pts = Array.from({ length: steps + 1 }, (_, i) => {
+      const t = i / steps;
+      const angle = armOffset + t * turns * 2 * Math.PI;
+      const r = t * maxR;
+      const px = cx + r * Math.cos(angle);
+      const py = cy + r * Math.sin(angle);
+      return `${i === 0 ? "M" : "L"}${px.toFixed(1)},${py.toFixed(1)}`;
+    }).join(" ");
+    return (
+      <path
+        key={arm}
+        d={pts}
+        stroke="#B8860B"
+        strokeWidth="0.5"
+        strokeOpacity="0.18"
+        fill="none"
+        strokeLinecap="round"
+      />
+    );
+  });
 
   return (
     <motion.svg
@@ -76,9 +131,11 @@ function ArchimedeanSpiral({
       animate={{ rotate: reverse ? -360 : 360 }}
       transition={{ duration: speed, repeat: Infinity, ease: "linear" }}
     >
-      <path d={d} stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      {/* Small dot at spiral start for visual anchor */}
-      <circle cx={cx} cy={cy} r="3" fill={color} opacity={0.6} />
+      {/* Glow rings at centre */}
+      <circle cx={cx} cy={cy} r="18" fill="#DAA520" fillOpacity="0.12" />
+      <circle cx={cx} cy={cy} r="8"  fill="#FFD700" fillOpacity="0.22" />
+      {guidePaths}
+      {shards}
     </motion.svg>
   );
 }
@@ -131,7 +188,6 @@ export default function LandingPage() {
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 400], [0, -60]);
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.6]);
-  const kalpY = useTransform(scrollY, [0, 600], [0, 80]);
 
   // AOS-like scroll reveal using Intersection Observer
   useEffect(() => {
@@ -280,41 +336,17 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Archimedean spiral — left side floating */}
-        <motion.div
-          style={{ position:"absolute", left:"-80px", top:"50%", translateY:"-50%", pointerEvents:"none", zIndex:1 }}
-          animate={{ y: [0, -24, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ArchimedeanSpiral size={420} opacity={0.18} speed={45} turns={6} color="#B8860B" />
-        </motion.div>
+        {/* Archimedean vortex spiral — centred, slowly rotating */}
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
+          justifyContent:"center", pointerEvents:"none", zIndex:1 }}>
+          <VortexSpiral size={820} opacity={0.3} speed={110} />
+        </div>
 
-        {/* Archimedean spiral — right side floating reverse */}
-        <motion.div
-          style={{ position:"absolute", right:"-80px", top:"50%", translateY:"-50%", pointerEvents:"none", zIndex:1 }}
-          animate={{ y: [0, 24, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ArchimedeanSpiral size={380} opacity={0.15} speed={55} turns={5} color="#DAA520" reverse />
-        </motion.div>
-
-        {/* Archimedean spiral — small top-right accent */}
-        <motion.div
-          style={{ position:"absolute", top:"80px", right:"8%", pointerEvents:"none", zIndex:1 }}
-          animate={{ y: [0, -14, 0], rotate: [0, 15, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ArchimedeanSpiral size={180} opacity={0.2} speed={35} turns={4} color="#C9A84C" />
-        </motion.div>
-
-        {/* Kalpvriksh — transparent, blended (no white box) */}
-        <motion.div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
-          justifyContent:"center", pointerEvents:"none", zIndex:1, y: kalpY }}>
-          <Image src="/kalpvriksh.png" alt="Kalpvriksh"
-            width={700} height={700}
-            style={{ objectFit:"contain", opacity:0.25, mixBlendMode:"multiply" }}
-            priority/>
-        </motion.div>
+        {/* Second spiral layer — counter-rotating, slightly offset */}
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
+          justifyContent:"center", pointerEvents:"none", zIndex:1 }}>
+          <VortexSpiral size={540} opacity={0.18} speed={75} reverse />
+        </div>
 
         {/* Corner ornaments */}
         <div style={{ position:"fixed", top:60, left:0, pointerEvents:"none", zIndex:0, opacity:0.35 }}><Corner/></div>
