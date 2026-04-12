@@ -4,7 +4,7 @@
 import { useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Upload, Loader2, CheckCircle2, FileImage, BarChart2, Camera } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, FileImage, BarChart2, Camera, XCircle } from "lucide-react";
 
 export default function TestResultsPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -38,13 +38,13 @@ export default function TestResultsPage() {
   }
 
   async function handleUpload() {
-    if (!file || !testId) return;
+    if (!testId) return;
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("image", file);
+      if (file) form.append("image", file);
       form.append("testId", testId);
-      form.append("expectedAnswers", JSON.stringify({})); // pass actual answers in production
+      form.append("noImage", file ? "false" : "true"); // flag: no upload = 0 for short answers
 
       const res = await fetch("/api/agent/grade", { method: "POST", body: form });
       const data = await res.json();
@@ -63,9 +63,9 @@ export default function TestResultsPage() {
     <div className="min-h-screen mesh-bg p-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-black mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
-          <span className="gradient-text">Test Results</span>
+          <span className="gradient-text">Submit Answers</span>
         </h1>
-        <p className="text-slate-400">Upload your handwritten answer sheet for AI grading</p>
+        <p className="text-slate-400">Upload your handwritten short-answer sheet for AI grading. MCQs are auto-graded.</p>
       </motion.div>
 
       {!grading ? (
@@ -112,6 +112,7 @@ export default function TestResultsPage() {
             )}
           </motion.div>
 
+          {/* Upload button */}
           {file && (
             <motion.button
               initial={{ opacity: 0, y: 10 }}
@@ -129,9 +130,36 @@ export default function TestResultsPage() {
             </motion.button>
           )}
 
+          {/* Skip option — marks short answers 0 */}
+          {!file && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
+              <button
+                id="skip-upload-btn"
+                onClick={() => handleUpload()}
+                disabled={uploading}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                  padding: "0.65rem 1.25rem", borderRadius: "0.75rem",
+                  border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.06)",
+                  color: "#f87171", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+                  opacity: uploading ? 0.5 : 1,
+                }}
+              >
+                {uploading
+                  ? <><Loader2 size={16} className="animate-spin" /> Submitting...</>
+                  : <><XCircle size={16} /> Skip — mark short answers as 0</>}
+              </button>
+              <p style={{ color: "#64748b", fontSize: "0.72rem", textAlign: "center", marginTop: "0.5rem" }}>
+                MCQs will still be graded. Short answers get 0 marks if no image is uploaded.
+              </p>
+            </motion.div>
+          )}
+
           {uploading && (
             <div className="mt-4 glass rounded-xl p-4 text-sm text-slate-400 text-center">
-              Gemini Vision is reading your handwriting and evaluating your answers...
+              {file
+                ? "Gemini Vision is reading your handwriting and evaluating your answers..."
+                : "Submitting — short answers will be marked 0..."}
             </div>
           )}
 

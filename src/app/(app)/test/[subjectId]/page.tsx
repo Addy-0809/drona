@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { getSubjectById } from "@/lib/subjects";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle2, Send, ClipboardList, BookOpen } from "lucide-react";
+import { Clock, Loader2, ChevronLeft, ChevronRight, Send, ClipboardList, BookOpen, Upload } from "lucide-react";
 
 interface MCQ {
   id: string;
@@ -65,7 +65,6 @@ export default function TestPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
   const [mcqAnswers, setMcqAnswers] = useState<Record<string, number>>({});
-  const [shortAnswers, setShortAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -196,7 +195,7 @@ export default function TestPage() {
     if (testId) router.push(`/test/results/${testId}`);
   }
 
-  const answeredCount = Object.keys(mcqAnswers).length + Object.keys(shortAnswers).filter(k => shortAnswers[k]?.trim()).length;
+  const answeredCount = Object.keys(mcqAnswers).length;
 
   if (!subject) return <div className="p-8 text-red-400">Subject not found.</div>;
 
@@ -282,7 +281,7 @@ export default function TestPage() {
               const q = allQuestions[i];
               const answered = q.type === "mcq"
                 ? mcqAnswers[(q.data as MCQ).id] !== undefined
-                : !!(shortAnswers[(q.data as ShortAnswer).id]?.trim());
+                : false; // short answers uploaded after submission
               return (
                 <button
                   key={i}
@@ -340,13 +339,29 @@ export default function TestPage() {
                         ))}
                       </div>
                     ) : (
-                      <textarea
-                        id={`short-answer-${currentQ}`}
-                        className="input min-h-32 resize-none"
-                        placeholder="Write your answer here..."
-                        value={shortAnswers[(data as ShortAnswer).id] || ""}
-                        onChange={(e) => setShortAnswers((prev) => ({ ...prev, [(data as ShortAnswer).id]: e.target.value }))}
-                      />
+                      // Short answer — no text box; student uploads handwritten sheet after submitting
+                      <div style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem",
+                        padding: "2rem", borderRadius: "1rem",
+                        border: "1.5px dashed rgba(99,102,241,0.3)",
+                        background: "rgba(99,102,241,0.04)",
+                      }}>
+                        <Upload size={28} style={{ color: "#6366f1", opacity: 0.7 }} />
+                        <p style={{ color: "#94a3b8", fontSize: "0.9rem", fontWeight: 600, textAlign: "center" }}>
+                          Write your answer on paper
+                        </p>
+                        <p style={{ color: "#64748b", fontSize: "0.78rem", textAlign: "center", maxWidth: 320, lineHeight: 1.6 }}>
+                          After submitting this test, you&apos;ll upload a photo or scan of your handwritten answers.
+                          If no upload is provided, this question will be marked <strong style={{ color: "#f87171" }}>0 marks</strong>.
+                        </p>
+                        <span style={{
+                          padding: "3px 12px", borderRadius: "2rem",
+                          background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)",
+                          color: "#818cf8", fontSize: "0.7rem", fontWeight: 700,
+                        }}>
+                          {(data as ShortAnswer).marks} marks · Upload after submit
+                        </span>
+                      </div>
                     )}
                   </>
                 );

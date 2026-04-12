@@ -19,17 +19,67 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const imageFile = formData.get("image") as File;
+    const imageFile = formData.get("image") as File | null;
     const testId = formData.get("testId") as string;
-    const answersJson = formData.get("expectedAnswers") as string;
+    const noImage = formData.get("noImage") === "true";
 
-    if (!imageFile) {
-      return NextResponse.json({ error: "Image is required" }, { status: 400 });
+    // ── NO IMAGE PATH: student skipped upload — short answers all get 0 ──────
+    if (noImage || !imageFile) {
+      let testData: Record<string, unknown> | null = null;
+      try {
+        const db = adminDb();
+        if (db && testId) {
+          const snap = await db.collection("tests").doc(testId).get();
+          if (snap.exists) testData = snap.data() as Record<string, unknown>;
+        }
+      } catch { /* non-fatal */ }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const test = (testData?.test as any) || null;
+      const shortAnswers: Array<{ id: string; question: string; marks: number }> = test?.shortAnswers || [];
+
+      const saResults = shortAnswers.map((q) => ({
+        questionId: q.id,
+        question: q.question,
+        studentAnswer: "Not submitted",
+        marksAwarded: 0,
+        maxMarks: q.marks,
+        feedback: "No handwritten answer sheet was uploaded. 0 marks awarded.",
+      }));
+
+      const maxScore = shortAnswers.reduce((s, q) => s + q.marks, 0) || 30;
+
+      const grading = {
+        totalScore: 0,
+        maxScore,
+        percentage: 0,
+        questionResults: saResults,
+        overallFeedback: "No answer sheet was submitted. All short-answer marks have been awarded 0. Please upload your handwritten answers next time.",
+        strengths: [],
+        improvements: ["Submit your handwritten answer sheet to receive a proper evaluation."],
+      };
+
+      try {
+        const db = adminDb();
+        if (db && testId) {
+          const { FieldValue, Timestamp } = await import("firebase-admin/firestore");
+          const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+          await db.collection("testResults").doc(testId).set(
+            { grading, gradedAt: FieldValue.serverTimestamp(), userId, status: "graded", noUpload: true, expiresAt: Timestamp.fromDate(new Date(Date.now() + SIXTY_DAYS_MS)) },
+            { merge: true }
+          );
+        }
+      } catch (dbErr) {
+        console.warn("Firestore write skipped (non-fatal):", dbErr);
+      }
+
+      return NextResponse.json({ grading });
     }
 
+    // ── NORMAL PATH: image uploaded ────────────────────────────────────────
+    const answersJson = formData.get("expectedAnswers") as string;
     const expectedAnswers = JSON.parse(answersJson || "{}");
 
-    // Convert file to base64 for Gemini Vision
     const bytes = await imageFile.arrayBuffer();
     const base64 = Buffer.from(bytes).toString("base64");
     const mimeType = imageFile.type as "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
