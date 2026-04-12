@@ -96,8 +96,14 @@ export default function ProfilePage() {
     (async () => {
       const attempt = async () => {
         const res = await fetch("/api/profile");
-        if (!res.ok) throw new Error("Failed to load profile");
-        return res.json();
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          // Extract the real error message from the response body
+          throw new Error(json.error || `HTTP ${res.status}: Failed to load profile`);
+        }
+        // If we get 200 but with an error field, treat as soft error
+        if (json.error) throw new Error(json.error);
+        return json;
       };
       try {
         const json = await attempt();

@@ -1,19 +1,193 @@
 // src/app/api/profile/route.ts
 // Profile API — aggregates progress + test history from Firestore
+// Uses Firestore REST API (no service account needed) with Admin SDK as fast path if available.
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 
+const PROJECT_ID =
+  process.env.FIREBASE_ADMIN_PROJECT_ID ||
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+  "";
+
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+// API key added to REST calls so Firebase rules can evaluate authenticated requests
+const KEY_PARAM = FIREBASE_API_KEY ? `?key=${FIREBASE_API_KEY}` : "";
+
+// ─── Firestore REST helpers ────────────────────────────────────────────────
+
+/** Convert a Firestore REST value to a plain JS value */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromRestValue(v: any): any {
+  if (!v) return null;
+  if ("stringValue" in v) return v.stringValue;
+  if ("integerValue" in v) return parseInt(v.integerValue);
+  if ("doubleValue" in v) return v.doubleValue;
+  if ("booleanValue" in v) return v.booleanValue;
+  if ("nullValue" in v) return null;
+  if ("timestampValue" in v) return v.timestampValue; // ISO string
+  if ("arrayValue" in v)
+    return (v.arrayValue.values || []).map(fromRestValue);
+  if ("mapValue" in v) {
+    const fields = v.mapValue.fields || {};
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(fields)) out[k] = fromRestValue(fields[k]);
+    return out;
+  }
+  return null;
+}
+
+/** Convert a Firestore REST document fields object to a plain JS object */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromRestDoc(fields: Record<string, any>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(fields)) out[k] = fromRestValue(fields[k]);
+  return out;
+}
+
+/** Run a Firestore structured query via REST (no auth needed for rules-free collections) */
+async function runQuery(
+  collectionId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filters: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  const url = `${FIRESTORE_BASE}:runQuery${KEY_PARAM}`;
+  const body = {
+    structuredQuery: {
+      from: [{ collectionId }],
+      where:
+        filters.length === 1
+          ? filters[0]
+          : { compositeFilter: { op: "AND", filters } },
+      limit: 100,
+    },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Firestore REST query failed (${res.status}): ${txt}`);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = await res.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return rows
+    .filter((r: any) => r.document)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any) => ({
+      id: r.document.name.split("/").pop() as string,
+      data: fromRestDoc(r.document.fields || {}),
+    }));
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function buildProgressFromDocs(
+  docs: Array<{ id: string; data: Record<string, unknown> }>
+) {
+  const progress: Record<
+    string,
+    {
+      completedTopics: string[];
+      totalStudied: number;
+      subjectName: string | null;
+      updatedAt: string | null;
+      plan: unknown;
+      totalTopicsInPlan: number;
+      currentWeek: number;
+    }
+  > = {};
+
+  for (const { data: d } of docs) {
+    const sid = d.subjectId as string;
+    if (!sid) continue;
+
+    // Count total topics in plan
+    let totalTopicsInPlan = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const plan = d.plan as any;
+    if (plan?.weeks) {
+      for (const w of plan.weeks as Array<{ topics?: unknown[] }>) {
+        totalTopicsInPlan += w.topics?.length || 0;
+      }
+    }
+
+    // Determine current week from completed topic IDs
+    let currentWeek = 1;
+    const completedIds: string[] = (d.completedTopicIds as string[]) || [];
+    if (plan?.weeks && completedIds.length > 0) {
+      const completedSet = new Set(completedIds);
+      for (const w of plan.weeks as Array<{
+        weekNumber: number;
+        topics?: Array<{ id: string }>;
+      }>) {
+        const weekIds = (w.topics || []).map((t) => t.id);
+        const weekDone =
+          weekIds.length > 0 && weekIds.every((id) => completedSet.has(id));
+        if (weekDone) currentWeek = w.weekNumber + 1;
+      }
+      if (plan?.totalWeeks)
+        currentWeek = Math.min(currentWeek, plan.totalWeeks as number);
+    }
+
+    progress[sid] = {
+      completedTopics: (d.completedTopics as string[]) || [],
+      totalStudied: ((d.completedTopics as string[]) || []).length,
+      subjectName: (d.subjectName as string) || null,
+      updatedAt: (d.updatedAt as string) || null,
+      plan: d.plan || null,
+      totalTopicsInPlan,
+      currentWeek,
+    };
+  }
+  return progress;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildTestsFromDocs(docs: Array<{ id: string; data: Record<string, unknown> }>, feedbackMap: Record<string, { percentage?: number; grade?: string }>) {
+  return docs.map(({ id: docId, data: d }) => {
+    const fb = feedbackMap[docId];
+    const title = (d.test as { title?: string } | undefined)?.title ?? "";
+    const weekMatch = title.match(/week\s*(\d+)/i);
+    const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
+    const createdAtRaw = d.createdAt;
+    let createdAt: string | null = null;
+    if (typeof createdAtRaw === "string") {
+      createdAt = createdAtRaw;
+    }
+    return {
+      testId: docId,
+      subjectId: (d.subjectId as string) || null,
+      subjectName: (d.subjectName as string) || null,
+      createdAt,
+      topicsCount: ((d.completedTopics as string[]) || []).length,
+      totalMarks: (d.test as { totalMarks?: number } | undefined)?.totalMarks ?? 50,
+      weekNumber,
+      hasFeedback: !!fb,
+      score: fb?.percentage ?? null,
+      percentage: fb?.percentage ?? null,
+      grade: fb?.grade ?? null,
+    };
+  });
+}
+
+// ─── Route handler ─────────────────────────────────────────────────────────
+
 export async function GET() {
   try {
     await headers();
 
-    // Wrap auth() in its own try/catch — if it throws (e.g. token mis-match,
-    // middleware timeout) we return a clean 401 instead of a 500 that the
-    // profile page displays as "Try Again".
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let session: any;
+    let session;
     try {
       session = await auth();
     } catch (authErr) {
@@ -27,155 +201,127 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const safeEmail = userEmail.replace(/[^a-zA-Z0-9]/g, "_");
+
+    // ── Try Admin SDK path first (fastest, works when credentials are available) ──
     const db = adminDb();
-    if (!db) {
-      // Return empty profile rather than crashing
+    if (db) {
+      try {
+        const [progressSnap, testsSnap] = await Promise.all([
+          db
+            .collection("progress")
+            .where("__name__", ">=", safeEmail + "_")
+            .where("__name__", "<", safeEmail + "_\uf8ff")
+            .get(),
+          db.collection("tests").where("userId", "==", userId).limit(50).get(),
+        ]);
+
+        // Build feedbackMap
+        const testIds = testsSnap.docs.map((d) => d.id);
+        const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
+        if (testIds.length > 0) {
+          for (let i = 0; i < testIds.length; i += 30) {
+            const chunk = testIds.slice(i, i + 30);
+            try {
+              const fbSnap = await db
+                .collection("testResults")
+                .where("__name__", "in", chunk)
+                .get();
+              fbSnap.docs.forEach((doc) => {
+                const fb = doc.data()?.feedback;
+                if (fb) feedbackMap[doc.id] = { percentage: fb.percentage, grade: fb.grade };
+              });
+            } catch { /* non-fatal */ }
+          }
+        }
+
+        const progressDocs = progressSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+        const testDocs = testsSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+
+        const progress = buildProgressFromDocs(progressDocs);
+        let tests = buildTestsFromDocs(testDocs, feedbackMap);
+        tests.sort((a, b) => {
+          if (!a.createdAt && !b.createdAt) return 0;
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return b.createdAt.localeCompare(a.createdAt);
+        });
+
+        console.log("[profile] Served via Admin SDK");
+        return NextResponse.json({ progress, tests });
+      } catch (adminErr) {
+        // Admin SDK failed (likely no credentials) — fall through to REST
+        console.warn("[profile] Admin SDK failed, falling back to REST:", (adminErr as Error).message);
+      }
+    }
+
+    // ── Firestore REST API fallback (works with project ID only, no service account) ──
+    if (!PROJECT_ID) {
+      console.warn("[profile] No Firebase project ID — returning empty profile");
       return NextResponse.json({ progress: {}, tests: [] });
     }
 
-    const safeEmail = userEmail.replace(/[^a-zA-Z0-9]/g, "_");
-
-    // ── 1. All subject progress docs (same proven query pattern as /api/progress) ──
-    const progressSnap = await db
-      .collection("progress")
-      .where("__name__", ">=", safeEmail + "_")
-      .where("__name__", "<", safeEmail + "_\uf8ff")
-      .get();
-
-    const progress: Record<string, {
-      completedTopics: string[];
-      totalStudied: number;
-      subjectName: string | null;
-      updatedAt: string | null;
-      plan: unknown;
-      totalTopicsInPlan: number;
-      currentWeek: number;
-    }> = {};
-
-    progressSnap.docs.forEach((doc) => {
-      const d = doc.data();
-      const sid = d.subjectId as string;
-      if (!sid) return;
-
-      // Count total topics in plan
-      let totalTopicsInPlan = 0;
-      if (d.plan?.weeks) {
-        for (const w of d.plan.weeks) {
-          totalTopicsInPlan += (w.topics?.length || 0);
-        }
-      }
-
-      // Determine current week
-      let currentWeek = 1;
-      const completedIds: string[] = d.completedTopicIds || [];
-      if (d.plan?.weeks && completedIds.length > 0) {
-        const completedSet = new Set(completedIds);
-        for (const w of d.plan.weeks) {
-          const weekIds = (w.topics || []).map((t: { id: string }) => t.id);
-          const weekDone = weekIds.length > 0 && weekIds.every((id: string) => completedSet.has(id));
-          if (weekDone) currentWeek = (w.weekNumber as number) + 1;
-        }
-        if (d.plan?.totalWeeks) currentWeek = Math.min(currentWeek, d.plan.totalWeeks as number);
-      }
-
-      progress[sid] = {
-        completedTopics: d.completedTopics || [],
-        totalStudied: (d.completedTopics || []).length,
-        subjectName: d.subjectName || null,
-        updatedAt: d.updatedAt || null,
-        plan: d.plan || null,
-        totalTopicsInPlan,
-        currentWeek,
-      };
-    });
-
-    // ── 2. Test records — simple where query, no orderBy (avoids missing composite index) ──
-    let tests: Array<{
-      testId: string;
-      subjectId: string | null;
-      subjectName: string | null;
-      createdAt: string | null;
-      topicsCount: number;
-      totalMarks: number;
-      weekNumber: number | null;
-      hasFeedback: boolean;
-      score: number | null;
-      percentage: number | null;
-      grade: string | null;
-    }> = [];
-
     try {
-      const testsSnap = await db
-        .collection("tests")
-        .where("userId", "==", userId)
-        .limit(50)
-        .get();
+      // 1. Progress docs — query by document name prefix (safeEmail_)
+      const progressDocs = await runQuery("progress", [
+        {
+          fieldFilter: {
+            field: { fieldPath: "userId" },
+            op: "EQUAL",
+            value: { stringValue: userId },
+          },
+        },
+      ]);
 
-      // ── 3. Fetch feedback scores (batch, no index needed) ──
-      const testIds = testsSnap.docs.map((d) => d.id);
+      // 2. Test docs
+      const testDocs = await runQuery("tests", [
+        {
+          fieldFilter: {
+            field: { fieldPath: "userId" },
+            op: "EQUAL",
+            value: { stringValue: userId },
+          },
+        },
+      ]);
+
+      // 3. Feedback (best-effort)
       const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
+      // Feedback lookup by REST is complex — skip for now, tests will show as "Pending"
 
-      if (testIds.length > 0) {
-        // Chunk into ≤30 for Firestore `in` limit
-        for (let i = 0; i < testIds.length; i += 30) {
-          const chunk = testIds.slice(i, i + 30);
+      const progress = buildProgressFromDocs(progressDocs);
+      let tests = buildTestsFromDocs(testDocs, feedbackMap);
+
+      // Also try to fetch feedback via REST for scored tests
+      if (testDocs.length > 0) {
+        const fbPromises = testDocs.slice(0, 30).map(async ({ id }) => {
           try {
-            const fbSnap = await db
-              .collection("testResults")
-              .where("__name__", "in", chunk)
-              .get();
-            fbSnap.docs.forEach((doc) => {
-              const fb = doc.data()?.feedback;
-              if (fb) feedbackMap[doc.id] = { percentage: fb.percentage, grade: fb.grade };
-            });
-          } catch {
-            // Non-fatal — feedback collection may not exist yet
-          }
-        }
+            const url = `${FIRESTORE_BASE}/testResults/${id}${KEY_PARAM}`;
+            const r = await fetch(url, { cache: "no-store" });
+            if (!r.ok) return;
+            const doc = await r.json();
+            const fb = fromRestDoc(doc.fields || {})?.feedback as { percentage?: number; grade?: string } | undefined;
+            if (fb?.percentage !== undefined) feedbackMap[id] = { percentage: fb.percentage as number, grade: fb.grade as string };
+          } catch { /* non-fatal */ }
+        });
+        await Promise.allSettled(fbPromises);
+        // Rebuild tests with feedback
+        tests = buildTestsFromDocs(testDocs, feedbackMap);
       }
 
-      tests = testsSnap.docs.map((doc) => {
-        const d = doc.data();
-        const fb = feedbackMap[doc.id];
-        const weekMatch = (d.test?.title as string | undefined)?.match(/week\s*(\d+)/i);
-        const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
-        // createdAt may be a Firestore Timestamp or ISO string
-        const createdAtRaw = d.createdAt;
-        let createdAt: string | null = null;
-        if (createdAtRaw?.toDate) {
-          createdAt = (createdAtRaw.toDate() as Date).toISOString();
-        } else if (typeof createdAtRaw === "string") {
-          createdAt = createdAtRaw;
-        }
-
-        return {
-          testId: doc.id,
-          subjectId: d.subjectId || null,
-          subjectName: d.subjectName || null,
-          createdAt,
-          topicsCount: (d.completedTopics || []).length,
-          totalMarks: d.test?.totalMarks || 50,
-          weekNumber,
-          hasFeedback: !!fb,
-          score: fb?.percentage ?? null,
-          percentage: fb?.percentage ?? null,
-          grade: fb?.grade ?? null,
-        };
-      });
-
-      // Sort by createdAt desc in JS (avoids composite index requirement)
       tests.sort((a, b) => {
         if (!a.createdAt && !b.createdAt) return 0;
         if (!a.createdAt) return 1;
         if (!b.createdAt) return -1;
         return b.createdAt.localeCompare(a.createdAt);
       });
-    } catch (testErr) {
-      // If tests collection doesn't exist yet, just return empty
-      console.warn("[profile] tests query failed (non-fatal):", testErr);
-    }
 
-    return NextResponse.json({ progress, tests });
+      console.log("[profile] Served via Firestore REST API");
+      return NextResponse.json({ progress, tests });
+    } catch (restErr) {
+      console.error("[profile] REST API also failed:", restErr);
+      // Last resort — return empty profile so the page renders instead of erroring
+      return NextResponse.json({ progress: {}, tests: [] });
+    }
   } catch (err) {
     console.error("[profile] GET Error:", err);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
