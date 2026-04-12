@@ -192,7 +192,13 @@ export default function TestPage() {
   function handleSubmit() {
     setSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
-    if (testId) router.push(`/test/results/${testId}`);
+    if (testId) {
+      // Persist MCQ answers so the results page can show right/wrong breakdown
+      try {
+        localStorage.setItem(`mcqAnswers_${testId}`, JSON.stringify(mcqAnswers));
+      } catch { /* non-fatal */ }
+      router.push(`/test/results/${testId}`);
+    }
   }
 
   const answeredCount = Object.keys(mcqAnswers).length;
