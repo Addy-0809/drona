@@ -153,6 +153,17 @@ function buildProgressFromDocs(
   return progress;
 }
 
+// Derive letter grade from percentage (grade route doesn't compute this)
+function calcGrade(pct: number): string {
+  if (pct >= 90) return "A+";
+  if (pct >= 80) return "A";
+  if (pct >= 70) return "B+";
+  if (pct >= 60) return "B";
+  if (pct >= 50) return "C";
+  if (pct >= 40) return "D";
+  return "F";
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTestsFromDocs(docs: Array<{ id: string; data: Record<string, unknown> }>, feedbackMap: Record<string, { percentage?: number; grade?: string }>) {
   return docs.map(({ id: docId, data: d }) => {
@@ -160,11 +171,20 @@ function buildTestsFromDocs(docs: Array<{ id: string; data: Record<string, unkno
     const title = (d.test as { title?: string } | undefined)?.title ?? "";
     const weekMatch = title.match(/week\s*(\d+)/i);
     const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
+
+    // createdAt can be a Firestore Timestamp (Admin SDK) or ISO string (REST)
     const createdAtRaw = d.createdAt;
     let createdAt: string | null = null;
     if (typeof createdAtRaw === "string") {
       createdAt = createdAtRaw;
+    } else if (createdAtRaw && typeof (createdAtRaw as { toDate?: () => Date }).toDate === "function") {
+      createdAt = (createdAtRaw as { toDate: () => Date }).toDate().toISOString();
+    } else if (createdAtRaw && typeof (createdAtRaw as { seconds?: number }).seconds === "number") {
+      createdAt = new Date((createdAtRaw as { seconds: number }).seconds * 1000).toISOString();
     }
+
+    const pct = fb?.percentage ?? null;
+    const grade = fb?.grade ?? (pct !== null ? calcGrade(pct) : null);
     return {
       testId: docId,
       subjectId: (d.subjectId as string) || null,
@@ -174,9 +194,9 @@ function buildTestsFromDocs(docs: Array<{ id: string; data: Record<string, unkno
       totalMarks: (d.test as { totalMarks?: number } | undefined)?.totalMarks ?? 50,
       weekNumber,
       hasFeedback: !!fb,
-      score: fb?.percentage ?? null,
-      percentage: fb?.percentage ?? null,
-      grade: fb?.grade ?? null,
+      score: pct,
+      percentage: pct,
+      grade,
     };
   });
 }
@@ -228,8 +248,11 @@ export async function GET() {
                 .where("__name__", "in", chunk)
                 .get();
               fbSnap.docs.forEach((doc) => {
-                const fb = doc.data()?.feedback;
-                if (fb) feedbackMap[doc.id] = { percentage: fb.percentage, grade: fb.grade };
+                // Grade route saves results under 'grading', not 'feedback'
+                const g = doc.data()?.grading as { percentage?: number } | undefined;
+                if (g?.percentage !== undefined) {
+                  feedbackMap[doc.id] = { percentage: g.percentage };
+                }
               });
             } catch { /* non-fatal */ }
           }
@@ -299,8 +322,9 @@ export async function GET() {
             const r = await fetch(url, { cache: "no-store" });
             if (!r.ok) return;
             const doc = await r.json();
-            const fb = fromRestDoc(doc.fields || {})?.feedback as { percentage?: number; grade?: string } | undefined;
-            if (fb?.percentage !== undefined) feedbackMap[id] = { percentage: fb.percentage as number, grade: fb.grade as string };
+            // Grade route saves under 'grading' field, not 'feedback'
+            const g = fromRestDoc(doc.fields || {})?.grading as { percentage?: number } | undefined;
+            if (g?.percentage !== undefined) feedbackMap[id] = { percentage: g.percentage as number };
           } catch { /* non-fatal */ }
         });
         await Promise.allSettled(fbPromises);
