@@ -35,10 +35,14 @@ export default function Sidebar() {
       {/* LOGO */}
       <div className="p-5 border-b border-white/5">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shadow-lg"
-            style={{ background: "linear-gradient(135deg, #DAA520, #B8860B)", boxShadow: "0 4px 12px rgba(184,134,11,0.4)" }}>
-            🪷
-          </div>
+          <Image
+            src="/drona-logo.png"
+            alt="Drona Logo"
+            width={36}
+            height={36}
+            className="rounded-full shadow-lg"
+            style={{ boxShadow: "0 4px 12px rgba(184,134,11,0.4)", objectFit: "cover" }}
+          />
           <div>
             <p className="font-bold text-white leading-tight" style={{ fontFamily: "'Cinzel', serif", letterSpacing: "0.1em", fontSize: "1.1rem" }}>DRONA</p>
             <p className="text-xs text-slate-500">AI Learning Platform</p>

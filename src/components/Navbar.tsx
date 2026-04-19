@@ -42,13 +42,17 @@ export default function Navbar() {
 
           {/* LOGO */}
           <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", marginRight: "2rem", flexShrink: 0 }}>
-            <div style={{
-              width: "36px", height: "36px", borderRadius: "50%",
-              background: "linear-gradient(135deg, #DAA520, #B8860B)",
-              boxShadow: "0 3px 12px rgba(184,134,11,0.4)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "18px",
-            }}>🪷</div>
+            <Image
+              src="/drona-logo.png"
+              alt="Drona Logo"
+              width={36}
+              height={36}
+              style={{
+                borderRadius: "50%",
+                boxShadow: "0 3px 12px rgba(184,134,11,0.4)",
+                objectFit: "cover",
+              }}
+            />
             <span style={{
               fontFamily: "'Cinzel', serif", fontWeight: 700,
               fontSize: "1.1rem", letterSpacing: "0.12em",

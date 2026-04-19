@@ -4,6 +4,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
 
 
 /* ---- Subject chips with icons ---- */
@@ -263,9 +264,8 @@ export default function LandingPage() {
           <motion.a href="#home" onClick={e=>{e.preventDefault();scrollTo("home");}}
             style={{ display:"flex", alignItems:"center", gap:"0.6rem", textDecoration:"none" }}
             whileHover={{ scale: 1.03 }}>
-            <div style={{ width:"36px",height:"36px",borderRadius:"50%",display:"flex",alignItems:"center",
-              justifyContent:"center",fontSize:"1.2rem",background:"linear-gradient(135deg,#DAA520,#B8860B)",
-              boxShadow:"0 2px 12px rgba(184,134,11,0.4)" }}>✦</div>
+            <Image src="/drona-logo.png" alt="Drona Logo" width={36} height={36}
+              style={{ borderRadius:"50%", boxShadow:"0 2px 12px rgba(184,134,11,0.4)", objectFit:"cover" }} />
             <span style={{ fontFamily:"'Cinzel',serif", fontWeight:800, fontSize:"1.25rem", letterSpacing:"0.1em",
               background:"linear-gradient(135deg,#5C3A00,#8B6914,#DAA520,#B8860B)",
               WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>DRONA</span>
