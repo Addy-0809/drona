@@ -1,6 +1,8 @@
 // src/app/api/profile/route.ts
 // Profile API — aggregates progress + test history from Firestore
-// Uses Firestore REST API (no service account needed) with Admin SDK as fast path if available.
+// Queries both "progress" and "weeklyPlans" collections for study data,
+// and "tests" + "testResults" for test history.
+// Uses Admin SDK as fast-path; falls back to Firestore REST API.
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -93,7 +95,8 @@ async function runQuery(
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function buildProgressFromDocs(
-  docs: Array<{ id: string; data: Record<string, unknown> }>
+  progressDocs: Array<{ id: string; data: Record<string, unknown> }>,
+  planDocs: Array<{ id: string; data: Record<string, unknown> }>
 ) {
   const progress: Record<
     string,
@@ -108,7 +111,8 @@ function buildProgressFromDocs(
     }
   > = {};
 
-  for (const { data: d } of docs) {
+  // First, populate from the progress collection
+  for (const { data: d } of progressDocs) {
     const sid = d.subjectId as string;
     if (!sid) continue;
 
@@ -150,6 +154,79 @@ function buildProgressFromDocs(
       currentWeek,
     };
   }
+
+  // Then, merge from weeklyPlans collection (may have plans not in progress)
+  for (const { data: d } of planDocs) {
+    const sid = d.subjectId as string;
+    if (!sid) continue;
+
+    // If already in progress from the progress collection, merge plan data if missing
+    if (progress[sid]) {
+      if (!progress[sid].plan && d.plan) {
+        progress[sid].plan = d.plan;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const plan = d.plan as any;
+        let totalTopics = 0;
+        if (plan?.weeks) {
+          for (const w of plan.weeks as Array<{ topics?: unknown[] }>) {
+            totalTopics += w.topics?.length || 0;
+          }
+        }
+        progress[sid].totalTopicsInPlan = totalTopics;
+      }
+      continue;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const plan = d.plan as any;
+    let totalTopicsInPlan = 0;
+    if (plan?.weeks) {
+      for (const w of plan.weeks as Array<{ topics?: unknown[] }>) {
+        totalTopicsInPlan += w.topics?.length || 0;
+      }
+    }
+
+    const completedTopics: string[] = (d.completedTopics as string[]) || [];
+
+    // Determine current week
+    let currentWeek = 1;
+    if (plan?.weeks && completedTopics.length > 0) {
+      const completedSet = new Set(completedTopics);
+      for (const w of plan.weeks as Array<{
+        weekNumber: number;
+        topics?: Array<{ id: string }>;
+      }>) {
+        const weekIds = (w.topics || []).map((t) => t.id);
+        const weekDone =
+          weekIds.length > 0 && weekIds.every((id) => completedSet.has(id));
+        if (weekDone) currentWeek = w.weekNumber + 1;
+      }
+      if (plan?.totalWeeks)
+        currentWeek = Math.min(currentWeek, plan.totalWeeks as number);
+    }
+
+    // Extract a createdAt for updatedAt
+    let updatedAt: string | null = null;
+    const createdAtRaw = d.createdAt;
+    if (typeof createdAtRaw === "string") {
+      updatedAt = createdAtRaw;
+    } else if (createdAtRaw && typeof (createdAtRaw as { toDate?: () => Date }).toDate === "function") {
+      updatedAt = (createdAtRaw as { toDate: () => Date }).toDate().toISOString();
+    } else if (createdAtRaw && typeof (createdAtRaw as { seconds?: number }).seconds === "number") {
+      updatedAt = new Date((createdAtRaw as { seconds: number }).seconds * 1000).toISOString();
+    }
+
+    progress[sid] = {
+      completedTopics,
+      totalStudied: completedTopics.length,
+      subjectName: (d.subjectName as string) || null,
+      updatedAt,
+      plan: d.plan || null,
+      totalTopicsInPlan,
+      currentWeek,
+    };
+  }
+
   return progress;
 }
 
@@ -227,16 +304,22 @@ export async function GET() {
     const db = adminDb();
     if (db) {
       try {
-        const [progressSnap, testsSnap] = await Promise.all([
+        // Query all relevant collections in parallel
+        const [progressSnap, plansSnap, testsSnap] = await Promise.all([
           db
             .collection("progress")
             .where("__name__", ">=", safeEmail + "_")
             .where("__name__", "<", safeEmail + "_\uf8ff")
             .get(),
+          db
+            .collection("weeklyPlans")
+            .where("userId", "==", userId)
+            .limit(50)
+            .get(),
           db.collection("tests").where("userId", "==", userId).limit(50).get(),
         ]);
 
-        // Build feedbackMap
+        // Build feedbackMap from testResults
         const testIds = testsSnap.docs.map((d) => d.id);
         const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
         if (testIds.length > 0) {
@@ -250,8 +333,11 @@ export async function GET() {
               fbSnap.docs.forEach((doc) => {
                 // Grade route saves results under 'grading', not 'feedback'
                 const g = doc.data()?.grading as { percentage?: number } | undefined;
+                const f = doc.data()?.feedback as { percentage?: number; grade?: string } | undefined;
                 if (g?.percentage !== undefined) {
                   feedbackMap[doc.id] = { percentage: g.percentage };
+                } else if (f?.percentage !== undefined) {
+                  feedbackMap[doc.id] = { percentage: f.percentage, grade: f.grade };
                 }
               });
             } catch { /* non-fatal */ }
@@ -259,9 +345,10 @@ export async function GET() {
         }
 
         const progressDocs = progressSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+        const planDocs = plansSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
         const testDocs = testsSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
 
-        const progress = buildProgressFromDocs(progressDocs);
+        const progress = buildProgressFromDocs(progressDocs, planDocs);
         let tests = buildTestsFromDocs(testDocs, feedbackMap);
         tests.sort((a, b) => {
           if (!a.createdAt && !b.createdAt) return 0;
@@ -270,7 +357,7 @@ export async function GET() {
           return b.createdAt.localeCompare(a.createdAt);
         });
 
-        console.log("[profile] Served via Admin SDK");
+        console.log("[profile] Served via Admin SDK — progress:", Object.keys(progress).length, "subjects, tests:", tests.length);
         return NextResponse.json({ progress, tests });
       } catch (adminErr) {
         // Admin SDK failed (likely no credentials) — fall through to REST
@@ -285,36 +372,56 @@ export async function GET() {
     }
 
     try {
-      // 1. Progress docs — query by document name prefix (safeEmail_)
-      const progressDocs = await runQuery("progress", [
-        {
-          fieldFilter: {
-            field: { fieldPath: "userId" },
-            op: "EQUAL",
-            value: { stringValue: userId },
+      // 1. Progress docs — query by userId field
+      let progressDocs: Array<{ id: string; data: Record<string, unknown> }> = [];
+      try {
+        progressDocs = await runQuery("progress", [
+          {
+            fieldFilter: {
+              field: { fieldPath: "userId" },
+              op: "EQUAL",
+              value: { stringValue: userId },
+            },
           },
-        },
-      ]);
+        ]);
+      } catch (e) {
+        console.warn("[profile] REST progress query failed:", (e as Error).message);
+      }
 
-      // 2. Test docs
-      const testDocs = await runQuery("tests", [
-        {
-          fieldFilter: {
-            field: { fieldPath: "userId" },
-            op: "EQUAL",
-            value: { stringValue: userId },
+      // 2. Weekly plans — query by userId
+      let planDocs: Array<{ id: string; data: Record<string, unknown> }> = [];
+      try {
+        planDocs = await runQuery("weeklyPlans", [
+          {
+            fieldFilter: {
+              field: { fieldPath: "userId" },
+              op: "EQUAL",
+              value: { stringValue: userId },
+            },
           },
-        },
-      ]);
+        ]);
+      } catch (e) {
+        console.warn("[profile] REST weeklyPlans query failed:", (e as Error).message);
+      }
 
-      // 3. Feedback (best-effort)
+      // 3. Test docs
+      let testDocs: Array<{ id: string; data: Record<string, unknown> }> = [];
+      try {
+        testDocs = await runQuery("tests", [
+          {
+            fieldFilter: {
+              field: { fieldPath: "userId" },
+              op: "EQUAL",
+              value: { stringValue: userId },
+            },
+          },
+        ]);
+      } catch (e) {
+        console.warn("[profile] REST tests query failed:", (e as Error).message);
+      }
+
+      // 4. Feedback (best-effort per-test lookup)
       const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
-      // Feedback lookup by REST is complex — skip for now, tests will show as "Pending"
-
-      const progress = buildProgressFromDocs(progressDocs);
-      let tests = buildTestsFromDocs(testDocs, feedbackMap);
-
-      // Also try to fetch feedback via REST for scored tests
       if (testDocs.length > 0) {
         const fbPromises = testDocs.slice(0, 30).map(async ({ id }) => {
           try {
@@ -322,15 +429,22 @@ export async function GET() {
             const r = await fetch(url, { cache: "no-store" });
             if (!r.ok) return;
             const doc = await r.json();
-            // Grade route saves under 'grading' field, not 'feedback'
-            const g = fromRestDoc(doc.fields || {})?.grading as { percentage?: number } | undefined;
-            if (g?.percentage !== undefined) feedbackMap[id] = { percentage: g.percentage as number };
+            const data = fromRestDoc(doc.fields || {});
+            // Grade route saves under 'grading' field
+            const g = data?.grading as { percentage?: number } | undefined;
+            const f = data?.feedback as { percentage?: number; grade?: string } | undefined;
+            if (g?.percentage !== undefined) {
+              feedbackMap[id] = { percentage: g.percentage as number };
+            } else if (f?.percentage !== undefined) {
+              feedbackMap[id] = { percentage: f.percentage as number, grade: f.grade as string };
+            }
           } catch { /* non-fatal */ }
         });
         await Promise.allSettled(fbPromises);
-        // Rebuild tests with feedback
-        tests = buildTestsFromDocs(testDocs, feedbackMap);
       }
+
+      const progress = buildProgressFromDocs(progressDocs, planDocs);
+      let tests = buildTestsFromDocs(testDocs, feedbackMap);
 
       tests.sort((a, b) => {
         if (!a.createdAt && !b.createdAt) return 0;
@@ -339,7 +453,7 @@ export async function GET() {
         return b.createdAt.localeCompare(a.createdAt);
       });
 
-      console.log("[profile] Served via Firestore REST API");
+      console.log("[profile] Served via REST — progress:", Object.keys(progress).length, "subjects, tests:", tests.length);
       return NextResponse.json({ progress, tests });
     } catch (restErr) {
       console.error("[profile] REST API also failed:", restErr);
