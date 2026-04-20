@@ -1,6 +1,7 @@
 "use client";
 // src/app/(app)/feedback/[testId]/page.tsx
 // Feedback report with Recharts radar chart
+// Fetches actual test results from Firestore + localStorage MCQ answers
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -28,12 +29,92 @@ export default function FeedbackPage() {
   useEffect(() => {
     async function loadFeedback() {
       try {
-        // In production: fetch from Firestore. For now generate it.
-        const mockResults = { score: 75, total: 100, topics: ["Core Concepts", "Applications", "Problem Solving"] };
+        // ── 1. Fetch actual test data (questions + correct answers) ──────
+        let testData: { test?: { mcqs?: Array<{ id: string; correctAnswer: number; marks: number; topic: string }>; shortAnswers?: Array<{ id: string; marks: number; topic: string }>; totalMarks?: number }; subjectName?: string } = {};
+        try {
+          const testRes = await fetch(`/api/agent/test-data?testId=${testId}`);
+          if (testRes.ok) testData = await testRes.json();
+        } catch { /* non-fatal */ }
+
+        // ── 2. Get MCQ answers from localStorage ────────────────────────
+        let mcqAnswers: Record<string, number> = {};
+        try {
+          const saved = localStorage.getItem(`mcqAnswers_${testId}`);
+          if (saved) mcqAnswers = JSON.parse(saved);
+        } catch { /* non-fatal */ }
+
+        // ── 3. Get grading results from Firestore (short answer scores) ─
+        let gradingData: { totalScore?: number; maxScore?: number; percentage?: number } | null = null;
+        try {
+          const gradeRes = await fetch(`/api/agent/test-data?testId=${testId}`);
+          if (gradeRes.ok) {
+            const gd = await gradeRes.json();
+            // testResults doc may be stored separately; for now use what we have
+            gradingData = gd.grading || null;
+          }
+        } catch { /* non-fatal */ }
+
+        // ── 4. Calculate actual MCQ score ────────────────────────────────
+        const mcqs = testData.test?.mcqs || [];
+        let mcqScore = 0;
+        let mcqMax = 0;
+        const topicScores: Record<string, { earned: number; max: number }> = {};
+
+        for (const q of mcqs) {
+          mcqMax += q.marks;
+          if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+          topicScores[q.topic].max += q.marks;
+
+          const chosen = mcqAnswers[q.id];
+          if (chosen !== undefined && chosen === q.correctAnswer) {
+            mcqScore += q.marks;
+            topicScores[q.topic].earned += q.marks;
+          }
+        }
+
+        // Short answer score (from grading if available, else 0)
+        const saScore = gradingData?.totalScore ?? 0;
+        const saMax = gradingData?.maxScore ?? (testData.test?.shortAnswers || []).reduce((s, q) => s + q.marks, 0);
+
+        // Total
+        const totalScore = mcqScore + saScore;
+        const totalMax = mcqMax + saMax;
+        const percentage = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+        // Build topic breakdown for the AI
+        const topicBreakdown = Object.entries(topicScores).map(([topic, scores]) => ({
+          topic,
+          earned: scores.earned,
+          max: scores.max,
+          percentage: scores.max > 0 ? Math.round((scores.earned / scores.max) * 100) : 0,
+        }));
+
+        const subjectName = testData.subjectName || "Selected Subject";
+
+        // ── 5. Send ACTUAL results to feedback agent ────────────────────
+        const actualResults = {
+          score: totalScore,
+          total: totalMax,
+          percentage,
+          mcqScore,
+          mcqMax,
+          mcqCorrect: Object.values(mcqAnswers).filter((ans, i) => {
+            const q = mcqs[i];
+            return q && ans === q.correctAnswer;
+          }).length,
+          mcqTotal: mcqs.length,
+          shortAnswerScore: saScore,
+          shortAnswerMax: saMax,
+          topicBreakdown,
+          topics: topicBreakdown.map(t => t.topic),
+        };
+
+        console.log("[feedback] Sending actual results to AI:", actualResults);
+
         const res = await fetch("/api/agent/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ testId, subjectName: "Selected Subject", testResults: mockResults }),
+          body: JSON.stringify({ testId, subjectName, testResults: actualResults }),
         });
         const data = await res.json();
         setFeedback(data.feedback);

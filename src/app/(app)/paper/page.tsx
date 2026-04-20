@@ -162,7 +162,7 @@ export default function PaperUploadPage() {
 
           {loading && (
             <div className="mt-4 glass rounded-xl p-4 text-sm text-slate-400 text-center space-y-1">
-              <p>Gemini Vision is reading your question paper...</p>
+              <p>Drona is analysing your question paper...</p>
               <p className="text-slate-600">Identifying patterns, marks distribution, and question types</p>
             </div>
           )}

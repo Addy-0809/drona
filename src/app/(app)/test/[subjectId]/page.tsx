@@ -89,6 +89,11 @@ export default function TestPage() {
       setTest(data.test);
       setTestId(data.testId);
       setTimeLeft(data.test.duration * 60);
+      // Save test data to localStorage as fallback for the results page
+      // (in case Firestore Admin SDK is unavailable for /api/agent/test-data)
+      try {
+        localStorage.setItem(`testData_${data.testId}`, JSON.stringify(data.test));
+      } catch { /* non-fatal */ }
     } catch (e) {
       console.error("Failed to load test:", e);
       setError(e instanceof Error ? e.message : "Failed to generate test");
@@ -197,6 +202,12 @@ export default function TestPage() {
       try {
         localStorage.setItem(`mcqAnswers_${testId}`, JSON.stringify(mcqAnswers));
       } catch { /* non-fatal */ }
+      // Also persist test data as fallback for results page
+      if (test) {
+        try {
+          localStorage.setItem(`testData_${testId}`, JSON.stringify(test));
+        } catch { /* non-fatal */ }
+      }
       router.push(`/test/results/${testId}`);
     }
   }

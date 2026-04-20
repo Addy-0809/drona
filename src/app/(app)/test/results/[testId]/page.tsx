@@ -90,10 +90,23 @@ export default function TestResultsPage() {
         const res = await fetch(`/api/agent/test-data?testId=${testId}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.test) setTest(data.test);
+          if (data.test) {
+            setTest(data.test);
+            setLoadingTest(false);
+            return;
+          }
         }
-      } catch { /* non-fatal — show whatever we have */ }
-      finally { setLoadingTest(false); }
+      } catch { /* non-fatal */ }
+
+      // Fallback: load test data from localStorage (saved by the test-taking page)
+      try {
+        const saved = localStorage.getItem(`testData_${testId}`);
+        if (saved) {
+          setTest(JSON.parse(saved));
+        }
+      } catch { /* non-fatal */ }
+
+      setLoadingTest(false);
     })();
   }, [testId]);
 
@@ -425,7 +438,7 @@ export default function TestResultsPage() {
 
                 {uploading && (
                   <div className="mt-4 glass rounded-xl p-4 text-sm text-slate-400 text-center">
-                    {file ? "Gemini Vision is reading your handwriting..." : "Submitting — short answers marked 0..."}
+                    {file ? "Drona is reading your handwriting..." : "Submitting — short answers marked 0..."}
                   </div>
                 )}
 
