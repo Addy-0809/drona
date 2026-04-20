@@ -1,11 +1,13 @@
 // src/app/api/agent/grade/route.ts
-// Grading Agent — evaluates uploaded handwritten answer sheets using Gemini Vision
+// Grading Agent — evaluates uploaded handwritten answer sheets using LangChain + Drona AI Vision
+// Uses LangChain's ChatGoogleGenerativeAI for structured vision model interactions
 // Firestore is optional — grading result is always returned even without DB
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { visionModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
+import { visionLLM, jsonParser } from "@/lib/langchain";
+import { HumanMessage } from "@langchain/core/messages";
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ grading });
     }
 
-    // ── NORMAL PATH: image uploaded ────────────────────────────────────────
+    // ── NORMAL PATH: image uploaded — use LangChain vision model ────────────
     const answersJson = formData.get("expectedAnswers") as string;
     const expectedAnswers = JSON.parse(answersJson || "{}");
 
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     const base64 = Buffer.from(bytes).toString("base64");
     const mimeType = imageFile.type as "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 
-    const prompt = `You are a university professor evaluating a student's handwritten answer sheet.
+    const promptText = `You are a university professor evaluating a student's handwritten answer sheet.
 
 The expected answers and marking scheme are:
 ${JSON.stringify(expectedAnswers, null, 2)}
@@ -115,12 +117,20 @@ Return ONLY valid JSON in this exact format:
 
 Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`;
 
-    const result = await visionModel.generateContent([
-      prompt,
-      { inlineData: { mimeType, data: base64 } },
-    ]);
+    // ── LangChain multimodal message with vision model ───────────────────
+    console.log("[grade] Invoking LangChain vision model for grading");
+    const message = new HumanMessage({
+      content: [
+        { type: "text", text: promptText },
+        {
+          type: "image_url",
+          image_url: { url: `data:${mimeType};base64,${base64}` },
+        },
+      ],
+    });
 
-    const text = result.response.text().trim();
+    const result = await visionLLM.invoke([message]);
+    const text = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
     const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const grading = JSON.parse(jsonText);
 
@@ -144,9 +154,9 @@ Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`
     const errMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("Grading agent error:", errMsg);
     const userMsg = errMsg.includes("429") || errMsg.includes("quota")
-      ? "Gemini API quota exceeded — please wait a minute and try again."
+      ? "Drona API quota exceeded — please wait a minute and try again."
       : errMsg.includes("404") || errMsg.includes("not found")
-      ? "Gemini model not found — the model may have been deprecated."
+      ? "Drona AI model not found — the model may have been deprecated."
       : `Failed to grade answer sheet: ${errMsg}`;
     return NextResponse.json({ error: userMsg }, { status: 500 });
   }

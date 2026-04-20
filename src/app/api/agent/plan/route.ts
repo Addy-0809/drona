@@ -1,37 +1,12 @@
 // src/app/api/agent/plan/route.ts
-// Planning Agent — generates a 4-week study plan using Gemini
+// Planning Agent — generates a 4-week study plan using LangGraph + LangChain
+// Uses LangGraph state graph for workflow orchestration and LangChain for LLM interaction
 // Firestore caching is optional — app works without Admin SDK
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { textModel } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
-
-/**
- * Sanitize AI-generated JSON text to prevent "Bad control character" errors.
- */
-function sanitizeJsonText(raw: string): string {
-  let text = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-  text = text.replace(/[\uFEFF\u200B\u200C\u200D\u2060]/g, "");
-  text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
-  let result = "";
-  let inString = false;
-  let escape = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (escape) { result += ch; escape = false; continue; }
-    if (ch === "\\" && inString) { result += ch; escape = true; continue; }
-    if (ch === '"') { inString = !inString; result += ch; continue; }
-    if (inString) {
-      if (ch === "\n") { result += "\\n"; continue; }
-      if (ch === "\r") { result += "\\r"; continue; }
-      if (ch === "\t") { result += "\\t"; continue; }
-    }
-    result += ch;
-  }
-  result = result.replace(/,\s*([}\]])/g, "$1");
-  return result;
-}
+import { planGraph } from "@/lib/langgraph";
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,42 +40,24 @@ export async function POST(req: NextRequest) {
       console.warn("Firestore read skipped:", dbErr);
     }
 
-    const prompt = `You are an expert academic tutor. Create a detailed 4-week study plan for a university student learning "${subjectName}".
+    // ── LangGraph execution ──────────────────────────────────────────────
+    // Invoke the plan agent graph with the subject details
+    console.log("[plan] Invoking LangGraph plan agent for:", subjectName);
+    const graphResult = await planGraph.invoke({
+      subjectName,
+      subjectId,
+      userId,
+      completedTopics: [],
+    });
 
-Return ONLY valid JSON in this exact format (no markdown, no code fences):
-{
-  "subject": "${subjectName}",
-  "totalWeeks": 4,
-  "weeks": [
-    {
-      "weekNumber": 1,
-      "title": "Week title here",
-      "goal": "What student will achieve this week",
-      "topics": [
-        {
-          "id": "topic-id-slug",
-          "name": "Topic Name",
-          "description": "Brief description of the topic",
-          "estimatedHours": 2,
-          "day": 1
-        }
-      ]
+    if (graphResult.error) {
+      throw new Error(graphResult.error);
     }
-  ]
-}
 
-Requirements:
-- 4 weeks total, each with 5-7 topics
-- Topics from beginner → advanced progressively
-- estimatedHours between 1 and 4
-- day between 1 and 7 (spread across the week)
-- topic IDs must be lowercase with hyphens (slugs)
-- Make it realistic for a university student`;
-
-    const result = await textModel.generateContent(prompt);
-    const text = result.response.text().trim();
-    const jsonText = sanitizeJsonText(text);
-    const plan = JSON.parse(jsonText);
+    const plan = graphResult.plan;
+    if (!plan) {
+      throw new Error("LangGraph plan agent returned no plan data");
+    }
 
     // Try to save to Firestore (optional — works without it)
     let planId = `local-${Date.now()}`;
@@ -128,11 +85,11 @@ Requirements:
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("Planning agent error:", errMsg);
-    // Surface specific Gemini errors for debugging
+    // Surface specific Drona errors for debugging
     const userMsg = errMsg.includes("429") || errMsg.includes("quota")
-      ? "Gemini API quota exceeded — please wait a minute and try again, or check your API key billing."
+      ? "Drona API quota exceeded — please wait a minute and try again, or check your API key billing."
       : errMsg.includes("404") || errMsg.includes("not found")
-      ? "Gemini model not found — the model may have been deprecated."
+      ? "Drona AI model not found — the model may have been deprecated."
       : `Failed to generate plan: ${errMsg}`;
     return NextResponse.json({ error: userMsg }, { status: 500 });
   }
