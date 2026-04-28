@@ -300,6 +300,8 @@ export async function GET() {
 
     const safeEmail = userEmail.replace(/[^a-zA-Z0-9]/g, "_");
 
+    console.log("[profile] Auth resolved — userId:", userId, "email:", userEmail, "safeEmail:", safeEmail);
+
     // ── Try Admin SDK path first (fastest, works when credentials are available) ──
     const db = adminDb();
     if (db) {
@@ -319,8 +321,47 @@ export async function GET() {
           db.collection("tests").where("userId", "==", userId).limit(50).get(),
         ]);
 
+        console.log("[profile] Admin SDK query results — progress:", progressSnap.size, "plans:", plansSnap.size, "tests:", testsSnap.size);
+
+        // If userId-based query returned no tests, try querying by email as fallback
+        // (userId might be email in some sessions, or Google sub ID in others)
+        let actualTestsSnap = testsSnap;
+        let actualPlansSnap = plansSnap;
+        if (testsSnap.size === 0 && userId !== userEmail) {
+          console.log("[profile] No tests found with userId, trying email:", userEmail);
+          const [emailTests, emailPlans] = await Promise.all([
+            db.collection("tests").where("userId", "==", userEmail).limit(50).get(),
+            db.collection("weeklyPlans").where("userId", "==", userEmail).limit(50).get(),
+          ]);
+          if (emailTests.size > 0) {
+            console.log("[profile] Found", emailTests.size, "tests with email-based userId");
+            actualTestsSnap = emailTests;
+          }
+          if (emailPlans.size > 0) {
+            actualPlansSnap = emailPlans;
+          }
+        }
+
+        // Also check if progress was stored with userId field instead of safeEmail doc ID
+        let actualProgressSnap = progressSnap;
+        if (progressSnap.size === 0) {
+          try {
+            const altProgress = await db.collection("progress").where("userId", "==", userId).limit(50).get();
+            if (altProgress.size > 0) {
+              console.log("[profile] Found", altProgress.size, "progress docs via userId field");
+              actualProgressSnap = altProgress;
+            } else if (userId !== userEmail) {
+              const altProgress2 = await db.collection("progress").where("userId", "==", userEmail).limit(50).get();
+              if (altProgress2.size > 0) {
+                console.log("[profile] Found", altProgress2.size, "progress docs via email field");
+                actualProgressSnap = altProgress2;
+              }
+            }
+          } catch { /* non-fatal */ }
+        }
+
         // Build feedbackMap from testResults
-        const testIds = testsSnap.docs.map((d) => d.id);
+        const testIds = actualTestsSnap.docs.map((d) => d.id);
         const feedbackMap: Record<string, { percentage?: number; grade?: string }> = {};
         if (testIds.length > 0) {
           for (let i = 0; i < testIds.length; i += 30) {
@@ -344,9 +385,9 @@ export async function GET() {
           }
         }
 
-        const progressDocs = progressSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
-        const planDocs = plansSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
-        const testDocs = testsSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+        const progressDocs = actualProgressSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+        const planDocs = actualPlansSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
+        const testDocs = actualTestsSnap.docs.map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }));
 
         const progress = buildProgressFromDocs(progressDocs, planDocs);
         let tests = buildTestsFromDocs(testDocs, feedbackMap);
@@ -416,6 +457,18 @@ export async function GET() {
             },
           },
         ]);
+        // Fallback: query by email if userId returned no results
+        if (testDocs.length === 0 && userId !== userEmail) {
+          testDocs = await runQuery("tests", [
+            {
+              fieldFilter: {
+                field: { fieldPath: "userId" },
+                op: "EQUAL",
+                value: { stringValue: userEmail },
+              },
+            },
+          ]);
+        }
       } catch (e) {
         console.warn("[profile] REST tests query failed:", (e as Error).message);
       }
