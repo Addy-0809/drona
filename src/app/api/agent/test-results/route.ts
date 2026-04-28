@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
           feedback: data.feedback || null,
           status: data.status || null,
           gradedAt: data.gradedAt || null,
+          mcqScore: data.mcqScore ?? null,
+          mcqMax: data.mcqMax ?? null,
+          mcqCorrect: data.mcqCorrect ?? null,
+          mcqTotal: data.mcqTotal ?? null,
         });
       }
       return NextResponse.json({ grading: null, feedback: null });
@@ -77,6 +81,10 @@ export async function GET(req: NextRequest) {
       grading: data.grading || null,
       feedback: data.feedback || null,
       status: data.status || null,
+      mcqScore: data.mcqScore ?? null,
+      mcqMax: data.mcqMax ?? null,
+      mcqCorrect: data.mcqCorrect ?? null,
+      mcqTotal: data.mcqTotal ?? null,
     });
   } catch (err) {
     console.error("[test-results] GET error:", err);

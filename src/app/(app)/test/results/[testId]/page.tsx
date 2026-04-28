@@ -123,6 +123,22 @@ export default function TestResultsPage() {
     return { correct, wrong, unanswered, score, max: test.mcqs.reduce((s, q) => s + q.marks, 0) };
   })();
 
+  // ── Persist MCQ scores to Firestore immediately (so feedback page has them) ─
+  useEffect(() => {
+    if (!testId || !test || Object.keys(mcqAnswers).length === 0) return;
+    fetch("/api/agent/save-mcq-score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        testId,
+        mcqScore: mcqStats.score,
+        mcqMax: mcqStats.max,
+        mcqCorrect: mcqStats.correct,
+        mcqTotal: test.mcqs.length,
+      }),
+    }).catch(() => { /* non-fatal */ });
+  }, [testId, test, mcqAnswers]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── File upload helpers ────────────────────────────────────────────────────
   function handleFile(f: File) {
     if (f.type.startsWith("image/") || f.type === "application/pdf") setFile(f);
