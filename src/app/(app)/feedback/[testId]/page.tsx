@@ -29,111 +29,123 @@ export default function FeedbackPage() {
   useEffect(() => {
     async function loadFeedback() {
       try {
-        // ── 1. Fetch actual test data (questions + correct answers) ──────
-        let testData: { test?: { mcqs?: Array<{ id: string; correctAnswer: number; marks: number; topic: string }>; shortAnswers?: Array<{ id: string; marks: number; topic: string }>; totalMarks?: number }; subjectName?: string } = {};
-        try {
-          const testRes = await fetch(`/api/agent/test-data?testId=${testId}`);
-          if (testRes.ok) testData = await testRes.json();
-        } catch { /* non-fatal */ }
+        // ── 1. Try to get pre-computed scores from localStorage (saved by results page) ──
+        let actualResults: Record<string, unknown> | null = null;
+        let subjectName = "Selected Subject";
 
-        // ── 2. Get MCQ answers from localStorage ────────────────────────
-        let mcqAnswers: Record<string, number> = {};
         try {
-          const saved = localStorage.getItem(`mcqAnswers_${testId}`);
-          if (saved) mcqAnswers = JSON.parse(saved);
-        } catch { /* non-fatal */ }
+          const saved = localStorage.getItem(`feedbackScores_${testId}`);
+          if (saved) {
+            const scores = JSON.parse(saved);
+            // Get subject name from test-data if available
+            try {
+              const testRes = await fetch(`/api/agent/test-data?testId=${testId}`);
+              if (testRes.ok) {
+                const td = await testRes.json();
+                if (td.subjectName) subjectName = td.subjectName;
+              }
+            } catch { /* non-fatal */ }
 
-        // ── 3. Get grading results from testResults collection (short answer scores) ─
-        let gradingData: { totalScore?: number; maxScore?: number; percentage?: number; questionResults?: Array<{ questionId: string; marksAwarded: number; maxMarks: number; feedback: string }> } | null = null;
-        let storedMcqScore: number | null = null;
-        let storedMcqMax: number | null = null;
-        try {
-          const gradeRes = await fetch(`/api/agent/test-results?testId=${testId}`);
-          if (gradeRes.ok) {
-            const gd = await gradeRes.json();
-            gradingData = gd.grading || null;
-            // Use stored MCQ scores as fallback if localStorage is unavailable
-            if (gd.mcqScore !== undefined) storedMcqScore = gd.mcqScore;
-            if (gd.mcqMax !== undefined) storedMcqMax = gd.mcqMax;
+            actualResults = {
+              score: scores.score,
+              total: scores.total,
+              percentage: scores.percentage,
+              mcqScore: scores.mcqScore,
+              mcqMax: scores.mcqMax,
+              mcqCorrect: scores.mcqCorrect,
+              mcqTotal: scores.mcqTotal,
+              shortAnswerScore: scores.shortAnswerScore,
+              shortAnswerMax: scores.shortAnswerMax,
+              topicBreakdown: scores.topicBreakdown,
+              topics: scores.topics,
+            };
+            console.log("[feedback] Using pre-computed scores from localStorage:", actualResults);
           }
         } catch { /* non-fatal */ }
 
-        // ── 4. Calculate actual MCQ score ────────────────────────────────
-        const mcqs = testData.test?.mcqs || [];
-        let mcqScore = 0;
-        let mcqMax = 0;
-        const topicScores: Record<string, { earned: number; max: number }> = {};
+        // ── 2. Fallback: reconstruct from API calls if localStorage is empty ──
+        if (!actualResults) {
+          console.log("[feedback] No localStorage scores, reconstructing from APIs...");
 
-        if (Object.keys(mcqAnswers).length > 0 && mcqs.length > 0) {
-          // Calculate from localStorage answers
-          for (const q of mcqs) {
-            mcqMax += q.marks;
-            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
-            topicScores[q.topic].max += q.marks;
+          // Fetch test questions
+          let testData: { test?: { mcqs?: Array<{ id: string; correctAnswer: number; marks: number; topic: string }>; shortAnswers?: Array<{ id: string; marks: number; topic: string }>; totalMarks?: number }; subjectName?: string } = {};
+          try {
+            const testRes = await fetch(`/api/agent/test-data?testId=${testId}`);
+            if (testRes.ok) testData = await testRes.json();
+          } catch { /* non-fatal */ }
 
-            const chosen = mcqAnswers[q.id];
-            if (chosen !== undefined && chosen === q.correctAnswer) {
-              mcqScore += q.marks;
-              topicScores[q.topic].earned += q.marks;
+          if (testData.subjectName) subjectName = testData.subjectName;
+
+          // Get MCQ answers from localStorage
+          let mcqAnswers: Record<string, number> = {};
+          try {
+            const saved = localStorage.getItem(`mcqAnswers_${testId}`);
+            if (saved) mcqAnswers = JSON.parse(saved);
+          } catch { /* non-fatal */ }
+
+          // Get grading results from testResults collection
+          let gradingData: { totalScore?: number; maxScore?: number } | null = null;
+          let storedMcqScore: number | null = null;
+          let storedMcqMax: number | null = null;
+          try {
+            const gradeRes = await fetch(`/api/agent/test-results?testId=${testId}`);
+            if (gradeRes.ok) {
+              const gd = await gradeRes.json();
+              gradingData = gd.grading || null;
+              if (gd.mcqScore !== undefined) storedMcqScore = gd.mcqScore;
+              if (gd.mcqMax !== undefined) storedMcqMax = gd.mcqMax;
             }
+          } catch { /* non-fatal */ }
+
+          // Calculate MCQ score
+          const mcqs = testData.test?.mcqs || [];
+          let mcqScore = 0;
+          let mcqMax = 0;
+          const topicScores: Record<string, { earned: number; max: number }> = {};
+
+          if (Object.keys(mcqAnswers).length > 0 && mcqs.length > 0) {
+            for (const q of mcqs) {
+              mcqMax += q.marks;
+              if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+              topicScores[q.topic].max += q.marks;
+              const chosen = mcqAnswers[q.id];
+              if (chosen !== undefined && chosen === q.correctAnswer) {
+                mcqScore += q.marks;
+                topicScores[q.topic].earned += q.marks;
+              }
+            }
+          } else if (storedMcqScore !== null) {
+            mcqScore = storedMcqScore;
+            mcqMax = storedMcqMax ?? mcqs.reduce((s, q) => s + q.marks, 0);
+          } else {
+            mcqMax = mcqs.reduce((s, q) => s + q.marks, 0);
           }
-        } else if (storedMcqScore !== null) {
-          // Fallback: use stored scores from Firestore
-          mcqScore = storedMcqScore;
-          mcqMax = storedMcqMax ?? mcqs.reduce((s, q) => s + q.marks, 0);
-          // Build topic scores from mcqs (assume full marks per topic as fallback)
-          for (const q of mcqs) {
-            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
-            topicScores[q.topic].max += q.marks;
-            // Distribute score proportionally as best guess
-            topicScores[q.topic].earned += q.marks;
-          }
-        } else {
-          // No MCQ data available at all — use test definition for max
-          mcqMax = mcqs.reduce((s, q) => s + q.marks, 0);
-          for (const q of mcqs) {
-            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
-            topicScores[q.topic].max += q.marks;
-          }
+
+          const saScore = gradingData?.totalScore ?? 0;
+          const saMax = gradingData?.maxScore ?? (testData.test?.shortAnswers || []).reduce((s, q) => s + q.marks, 0);
+          const totalScore = mcqScore + saScore;
+          const totalMax = mcqMax + saMax;
+          const percentage = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+          const topicBreakdown = Object.entries(topicScores).map(([topic, scores]) => ({
+            topic, earned: scores.earned, max: scores.max,
+            percentage: scores.max > 0 ? Math.round((scores.earned / scores.max) * 100) : 0,
+          }));
+
+          actualResults = {
+            score: totalScore, total: totalMax, percentage,
+            mcqScore, mcqMax,
+            mcqCorrect: mcqs.filter(q => mcqAnswers[q.id] !== undefined && mcqAnswers[q.id] === q.correctAnswer).length,
+            mcqTotal: mcqs.length,
+            shortAnswerScore: saScore, shortAnswerMax: saMax,
+            topicBreakdown,
+            topics: topicBreakdown.map(t => t.topic),
+          };
+          console.log("[feedback] Reconstructed results from APIs:", actualResults);
         }
 
-        // Short answer score (from grading if available, else 0)
-        const saScore = gradingData?.totalScore ?? 0;
-        const saMax = gradingData?.maxScore ?? (testData.test?.shortAnswers || []).reduce((s, q) => s + q.marks, 0);
-
-        // Total
-        const totalScore = mcqScore + saScore;
-        const totalMax = mcqMax + saMax;
-        const percentage = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
-
-        // Build topic breakdown for the AI
-        const topicBreakdown = Object.entries(topicScores).map(([topic, scores]) => ({
-          topic,
-          earned: scores.earned,
-          max: scores.max,
-          percentage: scores.max > 0 ? Math.round((scores.earned / scores.max) * 100) : 0,
-        }));
-
-        const subjectName = testData.subjectName || "Selected Subject";
-
-        // ── 5. Send ACTUAL results to feedback agent ────────────────────
-        const actualResults = {
-          score: totalScore,
-          total: totalMax,
-          percentage,
-          mcqScore,
-          mcqMax,
-          mcqCorrect: Object.keys(mcqAnswers).length > 0
-            ? mcqs.filter(q => mcqAnswers[q.id] !== undefined && mcqAnswers[q.id] === q.correctAnswer).length
-            : (storedMcqScore !== null ? Math.round(storedMcqScore / (mcqs[0]?.marks || 2)) : 0),
-          mcqTotal: mcqs.length,
-          shortAnswerScore: saScore,
-          shortAnswerMax: saMax,
-          topicBreakdown,
-          topics: topicBreakdown.map(t => t.topic),
-        };
-
-        console.log("[feedback] Sending actual results to AI:", actualResults);
+        // ── 3. Send to feedback agent ────────────────────────────────────
+        console.log("[feedback] Sending to feedback agent:", { subjectName, actualResults });
 
         const res = await fetch("/api/agent/feedback", {
           method: "POST",

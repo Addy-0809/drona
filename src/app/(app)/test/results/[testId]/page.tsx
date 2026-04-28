@@ -198,6 +198,47 @@ export default function TestResultsPage() {
   const scoreColor = (pct: number) =>
     pct >= 75 ? "text-emerald-400" : pct >= 50 ? "text-yellow-400" : "text-red-400";
 
+  // ── Navigate to feedback with complete scores saved to localStorage ────
+  function goToFeedback() {
+    if (!testId) return;
+    // Build topic breakdown from MCQ data
+    const topicScores: Record<string, { earned: number; max: number }> = {};
+    if (test) {
+      for (const q of test.mcqs) {
+        if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+        topicScores[q.topic].max += q.marks;
+        const chosen = mcqAnswers[q.id];
+        if (chosen !== undefined && chosen === q.correctAnswer) {
+          topicScores[q.topic].earned += q.marks;
+        }
+      }
+    }
+    const topicBreakdown = Object.entries(topicScores).map(([topic, s]) => ({
+      topic, earned: s.earned, max: s.max,
+      percentage: s.max > 0 ? Math.round((s.earned / s.max) * 100) : 0,
+    }));
+
+    const saScore = grading?.totalScore ?? 0;
+    const saMax = grading?.maxScore ?? (test?.shortAnswers || []).reduce((s, q) => s + q.marks, 0);
+    const totalScore = mcqStats.score + saScore;
+    const totalMax = mcqStats.max + saMax;
+    const pct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+    const completeScores = {
+      score: totalScore, total: totalMax, percentage: pct,
+      mcqScore: mcqStats.score, mcqMax: mcqStats.max,
+      mcqCorrect: mcqStats.correct, mcqTotal: test?.mcqs?.length ?? 0,
+      shortAnswerScore: saScore, shortAnswerMax: saMax,
+      topicBreakdown,
+      topics: topicBreakdown.map(t => t.topic),
+      subjectName: "",  // will be filled by feedback page from test-data if possible
+    };
+    try {
+      localStorage.setItem(`feedbackScores_${testId}`, JSON.stringify(completeScores));
+    } catch { /* non-fatal */ }
+    router.push(`/feedback/${testId}`);
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen mesh-bg p-4 md:p-8">
@@ -493,7 +534,7 @@ export default function TestResultsPage() {
                   <p className="text-sm text-slate-400 mb-3">Already graded? View your full performance report:</p>
                   <button
                     id="go-to-feedback-btn"
-                    onClick={() => router.push(`/feedback/${testId}`)}
+                    onClick={goToFeedback}
                     className="btn-secondary w-full justify-center text-sm"
                   >
                     <BarChart2 size={16} /> View Feedback Report
@@ -547,7 +588,7 @@ export default function TestResultsPage() {
 
                 <button
                   id="view-full-feedback-btn"
-                  onClick={() => router.push(`/feedback/${testId}`)}
+                  onClick={goToFeedback}
                   className="btn-primary w-full justify-center"
                 >
                   <BarChart2 size={18} /> View Full Feedback Report
