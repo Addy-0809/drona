@@ -137,11 +137,41 @@ export default function TestResultsPage() {
       form.append("testId", testId);
       form.append("noImage", skipUpload ? "true" : "false");
 
+      // Send expected answers (marking scheme) so the AI can evaluate the uploaded answers
+      if (test?.shortAnswers) {
+        const expectedAnswers = test.shortAnswers.reduce((acc, sa) => {
+          acc[sa.id] = {
+            question: sa.question,
+            expectedAnswer: sa.expectedAnswer,
+            marks: sa.marks,
+            keywords: sa.keywords,
+            topic: sa.topic,
+          };
+          return acc;
+        }, {} as Record<string, unknown>);
+        form.append("expectedAnswers", JSON.stringify(expectedAnswers));
+      }
+
       const res = await fetch("/api/agent/grade", { method: "POST", body: form });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setGrading(data.grading);
       setTab("short");
+
+      // Also save MCQ scores to Firestore for the feedback page to access
+      try {
+        await fetch("/api/agent/save-mcq-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            testId,
+            mcqScore: mcqStats.score,
+            mcqMax: mcqStats.max,
+            mcqCorrect: mcqStats.correct,
+            mcqTotal: test?.mcqs?.length ?? 0,
+          }),
+        });
+      } catch { /* non-fatal — feedback page has localStorage fallback */ }
     } catch (e) {
       console.error("Upload failed:", e);
     } finally {

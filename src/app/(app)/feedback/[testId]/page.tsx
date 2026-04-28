@@ -43,14 +43,18 @@ export default function FeedbackPage() {
           if (saved) mcqAnswers = JSON.parse(saved);
         } catch { /* non-fatal */ }
 
-        // ── 3. Get grading results from Firestore (short answer scores) ─
-        let gradingData: { totalScore?: number; maxScore?: number; percentage?: number } | null = null;
+        // ── 3. Get grading results from testResults collection (short answer scores) ─
+        let gradingData: { totalScore?: number; maxScore?: number; percentage?: number; questionResults?: Array<{ questionId: string; marksAwarded: number; maxMarks: number; feedback: string }> } | null = null;
+        let storedMcqScore: number | null = null;
+        let storedMcqMax: number | null = null;
         try {
-          const gradeRes = await fetch(`/api/agent/test-data?testId=${testId}`);
+          const gradeRes = await fetch(`/api/agent/test-results?testId=${testId}`);
           if (gradeRes.ok) {
             const gd = await gradeRes.json();
-            // testResults doc may be stored separately; for now use what we have
             gradingData = gd.grading || null;
+            // Use stored MCQ scores as fallback if localStorage is unavailable
+            if (gd.mcqScore !== undefined) storedMcqScore = gd.mcqScore;
+            if (gd.mcqMax !== undefined) storedMcqMax = gd.mcqMax;
           }
         } catch { /* non-fatal */ }
 
@@ -60,15 +64,36 @@ export default function FeedbackPage() {
         let mcqMax = 0;
         const topicScores: Record<string, { earned: number; max: number }> = {};
 
-        for (const q of mcqs) {
-          mcqMax += q.marks;
-          if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
-          topicScores[q.topic].max += q.marks;
+        if (Object.keys(mcqAnswers).length > 0 && mcqs.length > 0) {
+          // Calculate from localStorage answers
+          for (const q of mcqs) {
+            mcqMax += q.marks;
+            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+            topicScores[q.topic].max += q.marks;
 
-          const chosen = mcqAnswers[q.id];
-          if (chosen !== undefined && chosen === q.correctAnswer) {
-            mcqScore += q.marks;
+            const chosen = mcqAnswers[q.id];
+            if (chosen !== undefined && chosen === q.correctAnswer) {
+              mcqScore += q.marks;
+              topicScores[q.topic].earned += q.marks;
+            }
+          }
+        } else if (storedMcqScore !== null) {
+          // Fallback: use stored scores from Firestore
+          mcqScore = storedMcqScore;
+          mcqMax = storedMcqMax ?? mcqs.reduce((s, q) => s + q.marks, 0);
+          // Build topic scores from mcqs (assume full marks per topic as fallback)
+          for (const q of mcqs) {
+            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+            topicScores[q.topic].max += q.marks;
+            // Distribute score proportionally as best guess
             topicScores[q.topic].earned += q.marks;
+          }
+        } else {
+          // No MCQ data available at all — use test definition for max
+          mcqMax = mcqs.reduce((s, q) => s + q.marks, 0);
+          for (const q of mcqs) {
+            if (!topicScores[q.topic]) topicScores[q.topic] = { earned: 0, max: 0 };
+            topicScores[q.topic].max += q.marks;
           }
         }
 
@@ -98,10 +123,9 @@ export default function FeedbackPage() {
           percentage,
           mcqScore,
           mcqMax,
-          mcqCorrect: Object.values(mcqAnswers).filter((ans, i) => {
-            const q = mcqs[i];
-            return q && ans === q.correctAnswer;
-          }).length,
+          mcqCorrect: Object.keys(mcqAnswers).length > 0
+            ? mcqs.filter(q => mcqAnswers[q.id] !== undefined && mcqAnswers[q.id] === q.correctAnswer).length
+            : (storedMcqScore !== null ? Math.round(storedMcqScore / (mcqs[0]?.marks || 2)) : 0),
           mcqTotal: mcqs.length,
           shortAnswerScore: saScore,
           shortAnswerMax: saMax,
