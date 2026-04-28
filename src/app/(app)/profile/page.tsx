@@ -92,31 +92,26 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-    // Authenticated — fetch profile data (with one auto-retry for transient auth issues)
+    // Authenticated — query Firestore directly from client SDK
     (async () => {
-      const attempt = async () => {
-        const res = await fetch("/api/profile");
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          // Extract the real error message from the response body
-          throw new Error(json.error || `HTTP ${res.status}: Failed to load profile`);
-        }
-        // If we get 200 but with an error field, treat as soft error
-        if (json.error) throw new Error(json.error);
-        return json;
-      };
       try {
-        const json = await attempt();
-        setData(json);
-      } catch {
-        // One automatic retry after 1.5 s — handles transient session-cookie
-        // timing issues where the server isn't ready immediately.
-        await new Promise((r) => setTimeout(r, 1500));
+        const { fetchProfileData } = await import("@/lib/profile-client");
+        const userId = (session?.user as { id?: string } | undefined)?.id ?? session?.user?.email ?? "";
+        const result = await fetchProfileData(userId, session?.user?.email ?? "");
+        setData(result);
+      } catch (e) {
+        console.error("[profile] Client-side query failed:", e);
+        // Fallback: try server API route
         try {
-          const json = await attempt();
-          setData(json);
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Unknown error");
+          const res = await fetch("/api/profile");
+          const json = await res.json().catch(() => ({}));
+          if (res.ok && !json.error) {
+            setData(json);
+          } else {
+            setError(json.error || "Failed to load profile");
+          }
+        } catch (e2) {
+          setError(e2 instanceof Error ? e2.message : "Unknown error");
         }
       } finally {
         setLoading(false);
