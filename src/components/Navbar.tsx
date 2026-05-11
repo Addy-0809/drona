@@ -7,6 +7,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, BookOpen, Youtube, ClipboardList,
   BarChart2, FileUp, LogOut, Menu, X, ChevronDown, UserCircle2,
+  GraduationCap,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -25,6 +26,9 @@ export default function Navbar() {
   const { data: session } = useSession();
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const role = (session?.user as Record<string, unknown> | undefined)?.role;
+  const isTeacher = role === "teacher";
 
   return (
     <>
@@ -83,6 +87,25 @@ export default function Navbar() {
               );
             })}
           </div>
+
+          {/* Teacher Portal link — only for teachers */}
+          {isTeacher && (
+            <Link href="/teacher" style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "6px 14px", borderRadius: "8px",
+              textDecoration: "none", whiteSpace: "nowrap",
+              fontSize: "0.82rem",
+              fontWeight: pathname.startsWith("/teacher") ? 700 : 500,
+              fontFamily: "'Inter', sans-serif",
+              color: pathname.startsWith("/teacher") ? "#065f46" : "#047857",
+              background: pathname.startsWith("/teacher") ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.06)",
+              borderBottom: pathname.startsWith("/teacher") ? "2px solid #10b981" : "2px solid transparent",
+              transition: "all 0.2s ease",
+            }}>
+              <GraduationCap size={14} />
+              Teacher Portal
+            </Link>
+          )}
 
           {/* USER AVATAR + PROFILE DROPDOWN */}
           {session?.user && (
@@ -202,6 +225,21 @@ export default function Navbar() {
                 >
                   <UserCircle2 size={16} /> My Profile
                 </Link>
+                {isTeacher && (
+                  <Link
+                    href="/teacher"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "10px",
+                      padding: "10px 14px", borderRadius: "10px", marginBottom: "4px",
+                      color: pathname.startsWith("/teacher") ? "#065f46" : "#047857",
+                      background: pathname.startsWith("/teacher") ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.06)",
+                      fontWeight: 600, fontSize: "0.9rem", textDecoration: "none",
+                    }}
+                  >
+                    <GraduationCap size={16} /> Teacher Portal
+                  </Link>
+                )}
                 <button onClick={() => signOut({ callbackUrl: "/" })} style={{
                   display: "flex", alignItems: "center", gap: "10px",
                   width: "100%", padding: "10px 14px", marginTop: "4px",

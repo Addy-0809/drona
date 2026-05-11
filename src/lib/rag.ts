@@ -25,35 +25,87 @@ const splitter = new RecursiveCharacterTextSplitter({
  * Load and index the knowledge base for a given subject.
  * Returns a cached MemoryVectorStore if already loaded.
  */
+/**
+ * Load teacher-uploaded materials from Firestore for a given subject.
+ * Returns an array of text strings extracted from uploaded documents.
+ */
+async function loadTeacherMaterials(subjectId: string): Promise<string[]> {
+  try {
+    const { adminDb } = await import("@/lib/firebase-admin");
+    const db = adminDb();
+    if (!db) return [];
+
+    const snap = await db
+      .collection("teacherMaterials")
+      .where("subjectId", "==", subjectId)
+      .orderBy("uploadedAt", "desc")
+      .limit(50)
+      .get();
+
+    if (snap.empty) return [];
+
+    const texts: string[] = [];
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      if (d.extractedText && typeof d.extractedText === "string" && d.extractedText.length > 10) {
+        texts.push(d.extractedText);
+      }
+    }
+
+    console.log(`[RAG] Loaded ${texts.length} teacher materials for: ${subjectId}`);
+    return texts;
+  } catch (err) {
+    console.warn(`[RAG] Could not load teacher materials for ${subjectId}:`, err);
+    return [];
+  }
+}
+
 async function loadSubjectStore(subjectId: string): Promise<MemoryVectorStore | null> {
   // Return cached store if available
   if (storeCache.has(subjectId)) {
     return storeCache.get(subjectId)!;
   }
 
+  const allDocs: Document[] = [];
   const filePath = path.join(KNOWLEDGE_BASE_DIR, `${subjectId}.md`);
 
-  // Check if knowledge base file exists
-  if (!fs.existsSync(filePath)) {
-    console.warn(`[RAG] No knowledge base found for subject: ${subjectId}`);
-    return null;
-  }
-
   try {
-    console.log(`[RAG] Loading knowledge base for: ${subjectId}`);
-    const rawText = fs.readFileSync(filePath, "utf-8");
+    // 1. Load built-in knowledge base (if exists)
+    if (fs.existsSync(filePath)) {
+      console.log(`[RAG] Loading built-in KB for: ${subjectId}`);
+      const rawText = fs.readFileSync(filePath, "utf-8");
+      const kbDocs = await splitter.createDocuments(
+        [rawText],
+        [{ source: filePath, subjectId, type: "knowledge-base" }]
+      );
+      allDocs.push(...kbDocs);
+      console.log(`[RAG] Built-in KB: ${kbDocs.length} chunks`);
+    }
 
-    // Split into chunks
-    const docs = await splitter.createDocuments(
-      [rawText],
-      [{ source: filePath, subjectId }]
-    );
+    // 2. Load teacher-uploaded materials from Firestore
+    const teacherTexts = await loadTeacherMaterials(subjectId);
+    for (const text of teacherTexts) {
+      const teacherDocs = await splitter.createDocuments(
+        [text],
+        [{ source: "teacher-upload", subjectId, type: "teacher-material" }]
+      );
+      allDocs.push(...teacherDocs);
+    }
+    if (teacherTexts.length > 0) {
+      console.log(`[RAG] Teacher materials added: ${teacherTexts.length} documents`);
+    }
 
-    console.log(`[RAG] Created ${docs.length} chunks for ${subjectId}`);
+    // If no documents at all, return null
+    if (allDocs.length === 0) {
+      console.warn(`[RAG] No knowledge base or teacher materials found for: ${subjectId}`);
+      return null;
+    }
+
+    console.log(`[RAG] Total chunks for ${subjectId}: ${allDocs.length}`);
 
     // Create in-memory vector store with embeddings
     const embeddings = getEmbeddings();
-    const store = await MemoryVectorStore.fromDocuments(docs, embeddings);
+    const store = await MemoryVectorStore.fromDocuments(allDocs, embeddings);
 
     // Cache it
     storeCache.set(subjectId, store);
@@ -150,4 +202,14 @@ export function clearSubjectCache(subjectId?: string) {
   } else {
     storeCache.clear();
   }
+}
+
+/**
+ * Invalidate the cached vector store for a subject.
+ * Called after teacher uploads/deletes materials so the next query
+ * re-indexes everything including the new content.
+ */
+export function invalidateSubjectCache(subjectId: string) {
+  storeCache.delete(subjectId);
+  console.log(`[RAG] Cache invalidated for: ${subjectId}`);
 }
