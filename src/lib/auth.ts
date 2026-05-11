@@ -76,12 +76,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async jwt({ token, user }) {
-      if (user) token.sub = user.id;
+      if (user) {
+        token.sub = user.id;
+        // Ensure email is persisted in the JWT token
+        if (user.email) {
+          (token as Record<string, unknown>).email = user.email;
+        }
+      }
 
       // Always resolve role — check env whitelist first (fast, no DB call)
       const email = (token as Record<string, unknown>).email as string | undefined;
+      console.log(`[Auth JWT] email=${email}, current role=${(token as Record<string, unknown>).role}`);
+
       if (email) {
         const teacherEmails = getTeacherEmails();
+        console.log(`[Auth JWT] Teacher whitelist:`, [...teacherEmails]);
+        console.log(`[Auth JWT] Is "${email.toLowerCase()}" in whitelist?`, teacherEmails.has(email.toLowerCase()));
         if (teacherEmails.has(email.toLowerCase())) {
           (token as Record<string, unknown>).role = "teacher";
           return token;
