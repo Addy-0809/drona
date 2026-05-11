@@ -1,6 +1,7 @@
 // src/app/api/agent/grade/route.ts
 // Grading Agent — evaluates uploaded handwritten answer sheets using LangChain + Drona AI Vision
-// Uses LangChain's ChatGoogleGenerativeAI for structured vision model interactions
+// Enhanced with NLP Semantic Grading pipeline for fair, phrasing-independent scoring
+// Uses concept decomposition + embedding similarity + keyword matching
 // Firestore is optional — grading result is always returned even without DB
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
@@ -8,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { visionLLM, jsonParser } from "@/lib/langchain";
 import { HumanMessage } from "@langchain/core/messages";
+import { gradeAnswer, type GradeResult } from "@/lib/semantic-grader";
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
         overallFeedback: "No answer sheet was submitted. All short-answer marks have been awarded 0. Please upload your handwritten answers next time.",
         strengths: [],
         improvements: ["Submit your handwritten answer sheet to receive a proper evaluation."],
+        gradingMethod: "no-submission",
       };
 
       try {
@@ -78,50 +81,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ grading });
     }
 
-    // ── NORMAL PATH: image uploaded — use LangChain vision model ────────────
+    // ── NORMAL PATH: image uploaded — OCR via vision model, then NLP grading ──
     const answersJson = formData.get("expectedAnswers") as string;
     const expectedAnswers = JSON.parse(answersJson || "{}");
+    const subjectId = formData.get("subjectId") as string || "";
 
     const bytes = await imageFile.arrayBuffer();
     const base64 = Buffer.from(bytes).toString("base64");
     const mimeType = imageFile.type as "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 
-    const promptText = `You are a university professor evaluating a student's handwritten answer sheet.
+    // Step 1: Extract student answers from handwritten image using vision model
+    const ocrPrompt = `You are an expert at reading handwritten academic answer sheets.
 
-The expected answers and marking scheme are:
+Carefully read the handwritten answers in this image and extract the text for each question.
+
+The expected questions are:
 ${JSON.stringify(expectedAnswers, null, 2)}
-
-Please carefully read the handwritten answers in the image and evaluate them.
 
 Return ONLY valid JSON in this exact format:
 {
-  "totalScore": 85,
-  "maxScore": 100,
-  "percentage": 85,
-  "questionResults": [
+  "extractedAnswers": [
     {
       "questionId": "sa1",
-      "question": "Question text",
-      "studentAnswer": "What you read from the handwriting",
-      "marksAwarded": 4,
-      "maxMarks": 5,
-      "feedback": "Specific feedback for this answer",
-      "keywordsCovered": ["keyword1"],
-      "keywordsMissed": ["keyword2"]
+      "question": "The question text",
+      "studentAnswer": "What you read from the handwriting for this question"
     }
   ],
-  "overallFeedback": "Overall assessment of the student's performance",
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["area to improve 1", "area to improve 2"]
+  "readabilityNotes": "Any notes about handwriting quality"
 }
 
-Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`;
+Be thorough — try to read everything the student wrote. If a question's answer is not found, set studentAnswer to "Not found in submission".`;
 
-    // ── LangChain multimodal message with vision model ───────────────────
-    console.log("[grade] Invoking LangChain vision model for grading");
-    const message = new HumanMessage({
+    console.log("[grade] Step 1: Invoking vision model for OCR extraction");
+    const ocrMessage = new HumanMessage({
       content: [
-        { type: "text", text: promptText },
+        { type: "text", text: ocrPrompt },
         {
           type: "image_url",
           image_url: { url: `data:${mimeType};base64,${base64}` },
@@ -129,10 +123,119 @@ Be fair and constructive. If handwriting is unclear, give benefit of the doubt.`
       ],
     });
 
-    const result = await visionLLM.invoke([message]);
-    const text = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
-    const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const grading = JSON.parse(jsonText);
+    const ocrResult = await visionLLM.invoke([ocrMessage]);
+    const ocrText = typeof ocrResult.content === "string" ? ocrResult.content : JSON.stringify(ocrResult.content);
+    const ocrJsonText = ocrText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const ocrData = JSON.parse(ocrJsonText);
+    const extractedAnswers: Array<{ questionId: string; question: string; studentAnswer: string }> =
+      ocrData.extractedAnswers || [];
+
+    console.log(`[grade] OCR extracted ${extractedAnswers.length} answers`);
+
+    // Step 2: NLP Semantic Grading for each short answer
+    console.log("[grade] Step 2: NLP semantic grading pipeline");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expectedMap = new Map<string, any>();
+    if (Array.isArray(expectedAnswers)) {
+      for (const ea of expectedAnswers) {
+        expectedMap.set(ea.id, ea);
+      }
+    }
+
+    const questionResults: Array<{
+      questionId: string;
+      question: string;
+      studentAnswer: string;
+      marksAwarded: number;
+      maxMarks: number;
+      feedback: string;
+      semanticScore?: number;
+      keywordScore?: number;
+      conceptsCovered?: string[];
+      conceptsMissed?: string[];
+    }> = [];
+
+    let totalScore = 0;
+    let maxScore = 0;
+
+    // Grade answers 2 at a time to manage API rate limits
+    const CONCURRENCY = 2;
+    for (let i = 0; i < extractedAnswers.length; i += CONCURRENCY) {
+      const batch = extractedAnswers.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.all(
+        batch.map(async (extracted) => {
+          const expected = expectedMap.get(extracted.questionId);
+          if (!expected) {
+            return {
+              questionId: extracted.questionId,
+              question: extracted.question,
+              studentAnswer: extracted.studentAnswer,
+              marksAwarded: 0,
+              maxMarks: 5,
+              feedback: "Question not found in expected answers.",
+            };
+          }
+
+          // Use NLP semantic grading pipeline
+          const gradeResult: GradeResult = await gradeAnswer({
+            studentAnswer: extracted.studentAnswer,
+            expectedAnswer: expected.expectedAnswer || "",
+            keywords: expected.keywords || [],
+            maxMarks: expected.marks || 5,
+            question: expected.question || extracted.question,
+            subjectId: subjectId || undefined,
+          });
+
+          return {
+            questionId: extracted.questionId,
+            question: expected.question || extracted.question,
+            studentAnswer: extracted.studentAnswer,
+            marksAwarded: gradeResult.marksAwarded,
+            maxMarks: gradeResult.maxMarks,
+            feedback: gradeResult.feedback,
+            semanticScore: gradeResult.semanticScore,
+            keywordScore: gradeResult.keywordScore,
+            conceptsCovered: gradeResult.conceptsCovered,
+            conceptsMissed: gradeResult.conceptsMissed,
+          };
+        })
+      );
+
+      questionResults.push(...batchResults);
+    }
+
+    // Calculate totals
+    for (const qr of questionResults) {
+      totalScore += qr.marksAwarded;
+      maxScore += qr.maxMarks;
+    }
+
+    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+    // Step 3: Generate overall feedback summary
+    const strengths: string[] = [];
+    const improvements: string[] = [];
+
+    for (const qr of questionResults) {
+      const pct = qr.maxMarks > 0 ? (qr.marksAwarded / qr.maxMarks) * 100 : 0;
+      if (pct >= 80) {
+        strengths.push(`Strong answer on: ${qr.question.slice(0, 60)}...`);
+      } else if (pct < 50) {
+        improvements.push(`Needs improvement: ${qr.question.slice(0, 60)}...`);
+      }
+    }
+
+    const grading = {
+      totalScore,
+      maxScore,
+      percentage,
+      questionResults,
+      overallFeedback: `You scored ${totalScore}/${maxScore} (${percentage}%) on the short answers. ${strengths.length > 0 ? `Strengths in ${strengths.length} areas. ` : ""}${improvements.length > 0 ? `${improvements.length} areas need more work.` : "Well done overall!"}`,
+      strengths,
+      improvements,
+      gradingMethod: "nlp-semantic",
+      readabilityNotes: ocrData.readabilityNotes || "",
+    };
 
     // Save to Firestore — optional
     try {

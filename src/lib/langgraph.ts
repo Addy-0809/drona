@@ -3,10 +3,12 @@
 // Implements a multi-step educational pipeline:
 //   Plan → Test → Grade → Feedback
 // Each node is a distinct agent that processes its slice of the state
+// RAG-enhanced: retrieves subject context before each agent invocation
 
 import { StateGraph, Annotation, END, START } from "@langchain/langgraph";
 import { planChain, testChain, feedbackChain, textLLM, jsonParser } from "./langchain";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { retrieveContext, retrieveMultiContext } from "./rag";
 
 // ── State Definition ────────────────────────────────────────────────────────
 // LangGraph Annotation-based state schema for the educational agent workflow
@@ -16,6 +18,12 @@ export const EduAgentState = Annotation.Root({
   subjectName: Annotation<string>,
   subjectId: Annotation<string>,
   userId: Annotation<string>,
+
+  // RAG context — retrieved subject knowledge for grounding LLM outputs
+  subjectContext: Annotation<string>({
+    reducer: (_prev, next) => next,
+    default: () => "",
+  }),
 
   // Plan node output
   plan: Annotation<Record<string, unknown> | null>({
@@ -69,16 +77,29 @@ export type EduAgentStateType = typeof EduAgentState.State;
 
 // ── Node Functions ──────────────────────────────────────────────────────────
 
-/** Planning Node — generates a 4-week study plan */
+/** Planning Node — generates a 4-week study plan grounded in RAG context */
 async function planNode(
   state: EduAgentStateType
 ): Promise<Partial<EduAgentStateType>> {
   try {
     console.log("[LangGraph] planNode: generating study plan for", state.subjectName);
+
+    // Retrieve subject context via RAG if not already provided
+    let subjectContext = state.subjectContext || "";
+    if (!subjectContext && state.subjectId) {
+      console.log("[LangGraph] planNode: retrieving RAG context for", state.subjectId);
+      subjectContext = await retrieveContext(state.subjectId, `${state.subjectName} study plan syllabus topics`, 8);
+    }
+
     const plan = await planChain.invoke({
       subjectName: state.subjectName,
+      subjectContext: subjectContext || "No reference material available — use your knowledge.",
     });
-    return { plan: plan as Record<string, unknown>, currentStep: "plan_complete" };
+    return {
+      plan: plan as Record<string, unknown>,
+      subjectContext,
+      currentStep: "plan_complete",
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Plan generation failed";
     console.error("[LangGraph] planNode error:", msg);
@@ -86,7 +107,7 @@ async function planNode(
   }
 }
 
-/** Test Generation Node — creates a mock test from topics */
+/** Test Generation Node — creates a mock test from topics, grounded in RAG */
 async function testNode(
   state: EduAgentStateType
 ): Promise<Partial<EduAgentStateType>> {
@@ -96,11 +117,24 @@ async function testNode(
       return { error: "No topics available for test generation", currentStep: "error" };
     }
     console.log("[LangGraph] testNode: generating test for", state.subjectName);
+
+    // Retrieve multi-context using topics as queries for more targeted retrieval
+    let subjectContext = state.subjectContext || "";
+    if (state.subjectId) {
+      console.log("[LangGraph] testNode: retrieving RAG context for topics");
+      subjectContext = await retrieveMultiContext(state.subjectId, topics, 3);
+    }
+
     const test = await testChain.invoke({
       subjectName: state.subjectName,
       topicList: topics.join(", "),
+      subjectContext: subjectContext || "No reference material available — use your knowledge.",
     });
-    return { test: test as Record<string, unknown>, currentStep: "test_complete" };
+    return {
+      test: test as Record<string, unknown>,
+      subjectContext,
+      currentStep: "test_complete",
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Test generation failed";
     console.error("[LangGraph] testNode error:", msg);
@@ -108,7 +142,7 @@ async function testNode(
   }
 }
 
-/** Feedback Node — analyses test results and provides recommendations */
+/** Feedback Node — analyses test results with RAG-grounded recommendations */
 async function feedbackNode(
   state: EduAgentStateType
 ): Promise<Partial<EduAgentStateType>> {
@@ -117,9 +151,22 @@ async function feedbackNode(
       return { error: "No test results to analyse", currentStep: "error" };
     }
     console.log("[LangGraph] feedbackNode: generating feedback for", state.subjectName);
+
+    // Retrieve context focused on weak areas from test results
+    let subjectContext = state.subjectContext || "";
+    if (state.subjectId) {
+      console.log("[LangGraph] feedbackNode: retrieving RAG context");
+      subjectContext = await retrieveContext(
+        state.subjectId,
+        `${state.subjectName} study recommendations improvement areas`,
+        6
+      );
+    }
+
     const feedback = await feedbackChain.invoke({
       subjectName: state.subjectName,
       testResults: JSON.stringify(state.testResults, null, 2),
+      subjectContext: subjectContext || "No reference material available — use your knowledge.",
     });
     return { feedback: feedback as Record<string, unknown>, currentStep: "feedback_complete" };
   } catch (err) {
@@ -159,6 +206,7 @@ function routeAfterTest(state: EduAgentStateType): string {
  *
  * Each node can independently end the graph if there's an error
  * or if required data for the next step is missing.
+ * RAG context is retrieved at each node for grounding.
  */
 export function buildEduAgentGraph() {
   const graph = new StateGraph(EduAgentState)

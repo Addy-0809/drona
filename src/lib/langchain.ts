@@ -1,6 +1,7 @@
 // src/lib/langchain.ts
 // LangChain integration — wraps Gemini API calls via LangChain's ChatGoogleGenerativeAI
 // Provides prompt templates, output parsers, and chains for structured AI interactions
+// RAG-aware: prompts include {subjectContext} for injected retrieval-augmented context
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
@@ -40,12 +41,17 @@ export const visionLLM = new ChatGoogleGenerativeAI({
 
 export const jsonParser = new JsonOutputParser();
 
-// ── Prompt Templates ────────────────────────────────────────────────────────
+// ── Prompt Templates (RAG-enhanced with {subjectContext}) ───────────────────
 
 export const planPromptTemplate = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are an expert academic tutor. You create detailed, realistic 4-week study plans for university students. Always respond with ONLY valid JSON, no markdown, no code fences.`,
+    `You are an expert academic tutor. You create detailed, realistic 4-week study plans for university students.
+Use the following reference material to ensure your plan covers real, accurate topics and concepts.
+Always respond with ONLY valid JSON, no markdown, no code fences.
+
+REFERENCE MATERIAL:
+{subjectContext}`,
   ],
   [
     "human",
@@ -79,14 +85,20 @@ Requirements:
 - estimatedHours between 1 and 4
 - day between 1 and 7 (spread across the week)
 - topic IDs must be lowercase with hyphens (slugs)
-- Make it realistic for a university student`,
+- Make it realistic for a university student
+- Use ONLY topics that are accurate and present in the reference material`,
   ],
 ]);
 
 export const testPromptTemplate = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are a university exam paper setter. You create comprehensive mock tests with MCQs and short answer questions. Always respond with ONLY valid JSON, no markdown, no code fences.`,
+    `You are a university exam paper setter. You create comprehensive mock tests with MCQs and short answer questions.
+Use the following reference material to create accurate, factually correct questions and answers.
+Always respond with ONLY valid JSON, no markdown, no code fences.
+
+REFERENCE MATERIAL:
+{subjectContext}`,
   ],
   [
     "human",
@@ -127,6 +139,8 @@ Requirements:
 - MCQ correctAnswer is the 0-indexed position in options array
 - Questions should be university-level difficulty
 - Short answers should have clear expected answers with key concepts listed
+- All questions and answers MUST be factually accurate based on the reference material
+- Keywords should include the most important technical terms for each answer
 - Do NOT include any text outside the JSON object
 - Do NOT use special characters or line breaks inside string values`,
   ],
@@ -135,7 +149,12 @@ Requirements:
 export const feedbackPromptTemplate = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are an expert educational coach. You analyse student test performance and provide detailed constructive feedback. Always respond with ONLY valid JSON, no markdown, no code fences.`,
+    `You are an expert educational coach. You analyse student test performance and provide detailed constructive feedback.
+Use the following reference material to give accurate study recommendations grounded in real subject knowledge.
+Always respond with ONLY valid JSON, no markdown, no code fences.
+
+REFERENCE MATERIAL:
+{subjectContext}`,
   ],
   [
     "human",
@@ -180,17 +199,17 @@ Return ONLY valid JSON in this exact format:
 
 topic status: "strong" (>= 80%), "moderate" (50-79%), "weak" (< 50%)
 grade: standard letter grade A+/A/B+/B/C+/C/D/F
-Be encouraging but honest.`,
+Be encouraging but honest. Base recommendations on the reference material.`,
   ],
 ]);
 
 // ── LangChain Chains (Prompt → LLM → Parser) ───────────────────────────────
 
-/** Study plan generation chain */
+/** Study plan generation chain (RAG-aware — requires subjectContext input) */
 export const planChain = planPromptTemplate.pipe(textLLM).pipe(jsonParser);
 
-/** Mock test generation chain */
+/** Mock test generation chain (RAG-aware — requires subjectContext input) */
 export const testChain = testPromptTemplate.pipe(textLLM).pipe(jsonParser);
 
-/** Feedback analysis chain */
+/** Feedback analysis chain (RAG-aware — requires subjectContext input) */
 export const feedbackChain = feedbackPromptTemplate.pipe(textLLM).pipe(jsonParser);
