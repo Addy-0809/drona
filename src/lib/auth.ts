@@ -75,11 +75,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) token.sub = user.id;
 
-      // Fetch role from Firestore on sign-in or token refresh
-      if (user || trigger === "update") {
+      // Always resolve role — check env whitelist first (fast, no DB call)
+      const email = (token as Record<string, unknown>).email as string | undefined;
+      if (email) {
+        const teacherEmails = getTeacherEmails();
+        if (teacherEmails.has(email.toLowerCase())) {
+          (token as Record<string, unknown>).role = "teacher";
+          return token;
+        }
+      }
+
+      // If not in whitelist, check Firestore (only on sign-in to avoid DB spam)
+      if (user) {
         try {
           const { adminDb } = await import("@/lib/firebase-admin");
           const db = adminDb();
@@ -92,6 +102,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // non-fatal
         }
       }
+
+      // Default to student if no role set
+      if (!(token as Record<string, unknown>).role) {
+        (token as Record<string, unknown>).role = "student";
+      }
+
       return token;
     },
   },
