@@ -22,18 +22,13 @@ export async function POST(req: NextRequest) {
 
     const { subjectId, subjectName } = await req.json();
 
-    // Try to load cached plan from Firestore (optional)
+    // Try to load shared plan from Firestore — same plan for all users
     try {
       const db = adminDb();
       if (db) {
-        const existingPlan = await db
-          .collection("weeklyPlans")
-          .where("userId", "==", userId)
-          .where("subjectId", "==", subjectId)
-          .limit(1)
-          .get();
-        if (!existingPlan.empty) {
-          return NextResponse.json({ plan: existingPlan.docs[0].data().plan, cached: true });
+        const sharedPlan = await db.collection("subjectPlans").doc(subjectId).get();
+        if (sharedPlan.exists) {
+          return NextResponse.json({ plan: sharedPlan.data()!.plan, cached: true });
         }
       }
     } catch (dbErr) {
@@ -59,23 +54,19 @@ export async function POST(req: NextRequest) {
       throw new Error("LangGraph plan agent returned no plan data");
     }
 
-    // Try to save to Firestore (optional — works without it)
-    let planId = `local-${Date.now()}`;
+    // Save shared plan to Firestore keyed by subjectId — one plan for all users
+    let planId = `local-${subjectId}`;
     try {
       const db = adminDb();
       if (db) {
         const { FieldValue } = await import("firebase-admin/firestore");
-        const planRef = db.collection("weeklyPlans").doc();
-        await planRef.set({
-          id: planRef.id,
-          userId,
+        await db.collection("subjectPlans").doc(subjectId).set({
           subjectId,
           subjectName,
           plan,
           createdAt: FieldValue.serverTimestamp(),
-          completedTopics: [],
         });
-        planId = planRef.id;
+        planId = subjectId;
       }
     } catch (dbErr) {
       console.warn("Firestore write skipped (non-fatal):", dbErr);
