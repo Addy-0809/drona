@@ -3,6 +3,8 @@
 // Test results — MCQ breakdown (right/wrong/unanswered) + handwritten upload for short answers
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { saveMcqScoreClient, saveGradingClient } from "@/lib/client-db";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Loader2, CheckCircle2, XCircle, MinusCircle,
@@ -55,8 +57,11 @@ interface GradingResult {
 
 export default function TestResultsPage() {
   const { testId } = useParams<{ testId: string }>();
+  const { data: session } = useSession();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const userEmail = session?.user?.email ?? "";
+  const userId = (session?.user as { id?: string } | undefined)?.id ?? userEmail;
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [test, setTest] = useState<Test | null>(null);
@@ -126,16 +131,13 @@ export default function TestResultsPage() {
   // ── Persist MCQ scores to Firestore immediately (so feedback page has them) ─
   useEffect(() => {
     if (!testId || !test || Object.keys(mcqAnswers).length === 0) return;
-    fetch("/api/agent/save-mcq-score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        testId,
-        mcqScore: mcqStats.score,
-        mcqMax: mcqStats.max,
-        mcqCorrect: mcqStats.correct,
-        mcqTotal: test.mcqs.length,
-      }),
+    saveMcqScoreClient(testId, {
+      mcqScore: mcqStats.score,
+      mcqMax: mcqStats.max,
+      mcqCorrect: mcqStats.correct,
+      mcqTotal: test.mcqs.length,
+      userId,
+      userEmail,
     }).catch(() => { /* non-fatal */ });
   }, [testId, test, mcqAnswers]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -174,18 +176,17 @@ export default function TestResultsPage() {
       setGrading(data.grading);
       setTab("short");
 
-      // Also save MCQ scores to Firestore for the feedback page to access
+      // Persist grading + MCQ scores to Firestore (client SDK) so the profile
+      // test history and feedback page can read them.
       try {
-        await fetch("/api/agent/save-mcq-score", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            testId,
-            mcqScore: mcqStats.score,
-            mcqMax: mcqStats.max,
-            mcqCorrect: mcqStats.correct,
-            mcqTotal: test?.mcqs?.length ?? 0,
-          }),
+        await saveGradingClient(testId, data.grading, { userId, userEmail });
+        await saveMcqScoreClient(testId, {
+          mcqScore: mcqStats.score,
+          mcqMax: mcqStats.max,
+          mcqCorrect: mcqStats.correct,
+          mcqTotal: test?.mcqs?.length ?? 0,
+          userId,
+          userEmail,
         });
       } catch { /* non-fatal — feedback page has localStorage fallback */ }
     } catch (e) {

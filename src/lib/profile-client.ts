@@ -2,6 +2,7 @@
 // Client-side Firestore queries for profile data (bypasses broken Admin SDK)
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc, limit } from "firebase/firestore";
+import { ensureFirebaseAuth } from "@/lib/client-db";
 
 export interface TestRecord {
   testId: string;
@@ -37,6 +38,9 @@ function calcGrade(pct: number): string {
 }
 
 export async function fetchProfileData(userId: string, userEmail: string) {
+  // Wait for the Firebase Auth bridge before querying — rules require auth.
+  await ensureFirebaseAuth();
+
   const progress: Record<string, SubjectProgress> = {};
   const tests: TestRecord[] = [];
 

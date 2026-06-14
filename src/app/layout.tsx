@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth";
+import FirebaseAuthBridge from "@/components/FirebaseAuthBridge";
 
 export const viewport: Viewport = {
   themeColor: "#B8860B",
@@ -33,7 +34,10 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <SessionProvider session={session}>
+          <FirebaseAuthBridge />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
