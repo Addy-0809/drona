@@ -1,0 +1,3089 @@
+{
+  "dsa": {
+    "subject": "Data Structures and Algorithms",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations: Complexity & Linear Structures",
+        "goal": "Understand fundamental concepts of data structures and algorithms, including time/space complexity analysis, and master basic linear data structures like arrays, linked lists, stacks, and queues.",
+        "topics": [
+          {
+            "id": "introduction-to-dsa",
+            "name": "Introduction to DSA & Algorithm Analysis",
+            "description": "Overview of Data Structures and Algorithms, their importance, and an introduction to analyzing algorithm efficiency using Big O notation (time and space complexity).",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "arrays-and-basic-operations",
+            "name": "Arrays and Basic Operations",
+            "description": "Understanding static and dynamic arrays, their memory layout, and common operations like insertion, deletion, searching, and traversal.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "linked-lists",
+            "name": "Linked Lists (Singly, Doubly, Circular)",
+            "description": "Deep dive into linked lists, covering singly, doubly, and circular linked lists. Focus on node structure, traversal, insertion, and deletion operations.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "stacks",
+            "name": "Stacks (LIFO)",
+            "description": "Understanding the Stack data structure, its LIFO (Last-In, First-Out) principle, and common operations (push, pop, peek, isEmpty). Implementation using arrays and linked lists.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "queues",
+            "name": "Queues (FIFO)",
+            "description": "Understanding the Queue data structure, its FIFO (First-In, First-Out) principle, and common operations (enqueue, dequeue, peek, isEmpty). Implementation using arrays and linked lists, including circular queues.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "recursion-basics",
+            "name": "Recursion Basics",
+            "description": "Introduction to recursive thinking, understanding base cases and recursive steps, and analyzing the call stack. Solving simple recursive problems.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Non-Linear Structures: Trees and Graphs",
+        "goal": "Gain proficiency in non-linear data structures, specifically trees and graphs, including their various types, traversal methods, and basic applications.",
+        "topics": [
+          {
+            "id": "binary-trees-and-bsts",
+            "name": "Binary Trees and Binary Search Trees (BSTs)",
+            "description": "Understanding general tree concepts, binary trees, and the properties of Binary Search Trees. Operations like insertion, deletion, and searching in BSTs.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "tree-traversal",
+            "name": "Tree Traversal (BFS, DFS, In/Pre/Post-order)",
+            "description": "Exploring different ways to traverse trees: Breadth-First Search (Level-Order) and Depth-First Search (Inorder, Preorder, Postorder) traversals.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "heaps-and-heap-sort",
+            "name": "Heaps (Min/Max Heap) and Heap Sort",
+            "description": "Understanding heap properties, implementing min-heaps and max-heaps, and learning the Heap Sort algorithm for efficient sorting.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "hash-tables-and-hashing",
+            "name": "Hash Tables and Hashing",
+            "description": "Introduction to hash tables, hash functions, collision resolution techniques (chaining, open addressing), and their applications for efficient data retrieval.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "graphs-representation",
+            "name": "Graphs: Representation",
+            "description": "Introduction to graph theory, types of graphs, and different ways to represent graphs (adjacency matrix, adjacency list).",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "graph-traversal",
+            "name": "Graph Traversal (BFS, DFS)",
+            "description": "Implementing Breadth-First Search (BFS) and Depth-First Search (DFS) for graphs and understanding their applications.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Sorting, Searching, and Algorithmic Paradigms",
+        "goal": "Master efficient sorting and searching algorithms, and begin exploring fundamental algorithmic design paradigms like greedy, divide and conquer, and dynamic programming.",
+        "topics": [
+          {
+            "id": "sorting-merge-sort",
+            "name": "Sorting Algorithms: Merge Sort",
+            "description": "Understanding the Divide and Conquer paradigm through Merge Sort, its implementation, and complexity analysis.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "sorting-quick-sort",
+            "name": "Sorting Algorithms: Quick Sort",
+            "description": "Understanding the Divide and Conquer paradigm through Quick Sort, its implementation, pivot selection strategies, and complexity analysis.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "searching-binary-search-revisited",
+            "name": "Searching Algorithms: Binary Search (Revisited)",
+            "description": "In-depth look at Binary Search on sorted arrays, its recursive and iterative implementations, and applications.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "greedy-algorithms",
+            "name": "Greedy Algorithms",
+            "description": "Introduction to the Greedy paradigm, understanding its principles, and solving classic problems like Activity Selection and Fractional Knapsack.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "divide-and-conquer",
+            "name": "Divide and Conquer Paradigm",
+            "description": "Formalizing the Divide and Conquer strategy, analyzing its characteristics, and reviewing examples beyond sorting (e.g., Tower of Hanoi).",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "dynamic-programming-intro",
+            "name": "Dynamic Programming (Introduction)",
+            "description": "Introduction to Dynamic Programming, understanding overlapping subproblems and optimal substructure. Solving basic DP problems using memoization and tabulation (e.g., Fibonacci, Coin Change).",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Advanced Graph Algorithms & Problem Solving",
+        "goal": "Explore advanced graph algorithms, apply various algorithmic paradigms to complex problems, and consolidate understanding for effective problem-solving.",
+        "topics": [
+          {
+            "id": "minimum-spanning-trees",
+            "name": "Minimum Spanning Trees (Prim's & Kruskal's)",
+            "description": "Understanding MSTs and implementing Prim's and Kruskal's algorithms for finding the minimum spanning tree in a weighted graph.",
+            "estimatedHours": 4,
+            "day": 1
+          },
+          {
+            "id": "shortest-path-dijkstra",
+            "name": "Shortest Path Algorithms: Dijkstra's",
+            "description": "Implementing Dijkstra's algorithm to find the shortest path from a single source to all other vertices in a graph with non-negative edge weights.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "backtracking",
+            "name": "Backtracking",
+            "description": "Introduction to the Backtracking algorithmic paradigm, understanding how to explore all potential solutions systematically. Solving problems like N-Queens, Sudoku Solver, or Permutations.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "string-algorithms-basics",
+            "name": "String Algorithms (Basic String Matching)",
+            "description": "Introduction to basic string manipulation and searching algorithms, such as naive pattern matching and an overview of more advanced techniques.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "complexity-classes-p-np",
+            "name": "Complexity Classes (P, NP, NP-Complete - Conceptual)",
+            "description": "A conceptual introduction to computational complexity theory, understanding P, NP, and NP-Complete problems without deep mathematical proofs.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "review-and-advanced-problem-solving",
+            "name": "Review and Advanced Problem Solving Strategies",
+            "description": "Consolidating all learned data structures and algorithms, practicing mixed problems, and discussing strategies for approaching new algorithmic challenges.",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      }
+    ]
+  },
+  "web-programming": {
+    "subject": "Web Programming",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Web Fundamentals & Front-End Basics",
+        "goal": "Understand how the web works, build basic static web pages using HTML, style them with CSS, and grasp fundamental JavaScript concepts.",
+        "topics": [
+          {
+            "id": "web-architecture-http-dns",
+            "name": "Web Architecture, HTTP & DNS",
+            "description": "Explore the client-server model, how browsers communicate with servers, the role of HTTP/HTTPS protocols, and domain name resolution.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "html-structure-semantics",
+            "name": "HTML Structure & Semantics",
+            "description": "Learn to create well-structured web content using HTML5 elements, understand semantic tags, and build basic forms.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "css-basics-box-model",
+            "name": "CSS Basics & Box Model",
+            "description": "Style HTML elements using CSS selectors, properties, values, and understand the fundamental CSS box model for layout.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "css-flexbox-introduction",
+            "name": "CSS Layouts: Flexbox Introduction",
+            "description": "Dive into Flexbox for creating one-dimensional layouts and aligning items efficiently within containers.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "javascript-intro-datatypes",
+            "name": "Introduction to JavaScript",
+            "description": "Learn JavaScript variables, data types, operators, and basic control flow (conditionals, loops) for dynamic behavior.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "dev-environment-setup",
+            "name": "Development Environment Setup",
+            "description": "Set up a robust development environment including a code editor (e.g., VS Code) and utilize browser developer tools for inspection and debugging.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Dynamic Front-End & Version Control",
+        "goal": "Master responsive web design, make web pages interactive with JavaScript DOM manipulation and events, and begin using Git for version control.",
+        "topics": [
+          {
+            "id": "advanced-css-grid-responsive",
+            "name": "Advanced CSS: Grid & Responsive Design",
+            "description": "Explore CSS Grid for two-dimensional layouts and implement responsive design techniques using media queries for various screen sizes.",
+            "estimatedHours": 4,
+            "day": 1
+          },
+          {
+            "id": "javascript-dom-manipulation",
+            "name": "JavaScript DOM Manipulation",
+            "description": "Interact with the Document Object Model (DOM) to select, create, modify, and remove HTML elements dynamically.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "javascript-event-handling",
+            "name": "JavaScript Event Handling",
+            "description": "Learn to capture and respond to user interactions (clicks, keypresses, form submissions) using event listeners.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "async-javascript-fetch-api",
+            "name": "Asynchronous JavaScript & Fetch API",
+            "description": "Understand asynchronous operations using callbacks, Promises, and the Fetch API to make network requests without blocking the main thread.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "forms-client-side-validation",
+            "name": "Forms & Client-side Validation",
+            "description": "Design user-friendly forms and implement client-side validation using HTML5 attributes and JavaScript to improve user experience.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "version-control-git-github",
+            "name": "Version Control with Git & GitHub",
+            "description": "Introduction to Git for tracking code changes, creating branches, merging, and collaborating on projects using GitHub.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Back-End Development & Data Management",
+        "goal": "Understand server-side programming, build basic APIs with Node.js and Express, and learn fundamental database concepts with both SQL and NoSQL.",
+        "topics": [
+          {
+            "id": "backend-concepts-request-response",
+            "name": "Introduction to Back-End Concepts",
+            "description": "Grasp the server-side architecture, the request-response lifecycle, and the role of server-side languages.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "nodejs-express-fundamentals",
+            "name": "Node.js & Express.js Fundamentals",
+            "description": "Set up a basic server using Node.js and the Express.js framework, define routes, and handle HTTP requests.",
+            "estimatedHours": 4,
+            "day": 2
+          },
+          {
+            "id": "restful-api-design",
+            "name": "RESTful API Design Principles",
+            "description": "Learn to design clean and scalable APIs following REST principles, utilizing HTTP methods for resource manipulation.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "database-sql-basics",
+            "name": "Introduction to Databases (SQL)",
+            "description": "Understand relational database concepts, SQL queries (SELECT, INSERT, UPDATE, DELETE), and database schema design.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "database-nosql-basics",
+            "name": "Introduction to Databases (NoSQL)",
+            "description": "Explore NoSQL databases, specifically document-based databases like MongoDB, and perform basic CRUD operations.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "frontend-backend-connection",
+            "name": "Connecting Front-End to Back-End",
+            "description": "Learn to fetch data from your back-end API using client-side JavaScript and display it on the front-end.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "express-middleware-concepts",
+            "name": "Middleware in Express.js",
+            "description": "Understand and implement middleware functions in Express.js for tasks like logging, authentication, and error handling.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Security, Deployment & Advanced Topics",
+        "goal": "Implement user authentication, understand web security best practices, learn deployment strategies, and explore real-time communication.",
+        "topics": [
+          {
+            "id": "user-authentication-sessions-cookies",
+            "name": "User Authentication: Sessions & Cookies",
+            "description": "Implement user login and registration, managing user sessions using cookies and session IDs on the server-side.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "user-authorization-access-control",
+            "name": "User Authorization: Access Control",
+            "description": "Learn to implement authorization mechanisms to control what authenticated users can access or modify based on their roles or permissions.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "deployment-fundamentals",
+            "name": "Deployment Fundamentals",
+            "description": "Understand the basics of deploying web applications to hosting platforms, configuring domains, and setting up server environments.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "web-security-best-practices",
+            "name": "Web Security Best Practices",
+            "description": "Identify common web vulnerabilities like XSS, CSRF, and SQL Injection, and learn strategies to prevent them in your applications.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "error-handling-debugging",
+            "name": "Error Handling & Debugging",
+            "description": "Develop robust error handling strategies for both front-end and back-end, and master debugging techniques for efficient problem-solving.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "websockets-realtime-communication",
+            "name": "WebSockets for Real-time Applications",
+            "description": "Introduction to WebSockets for persistent, full-duplex communication, enabling real-time features like chat or live updates.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "capstone-project-planning",
+            "name": "Capstone Project Planning",
+            "description": "Apply all learned concepts by outlining and planning a full-stack web application project, considering architecture, features, and technologies.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "dbms": {
+    "subject": "Database Management Systems",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Introduction to Databases & Relational Model Fundamentals",
+        "goal": "Understand the core concepts of database systems, the relational model, and basic SQL commands for defining data structures.",
+        "topics": [
+          {
+            "id": "introduction-to-dbms",
+            "name": "Introduction to DBMS",
+            "description": "Definition, purpose, advantages, disadvantages, and different types of database systems (hierarchical, network, relational, object-oriented).",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "data-models",
+            "name": "Data Models & Schemas",
+            "description": "Understanding conceptual, logical, and physical data models. Introduction to database schemas, instances, and data independence.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "relational-model-concepts",
+            "name": "Relational Model Concepts",
+            "description": "Deep dive into relations (tables), tuples (rows), attributes (columns), domains, keys (primary, foreign, candidate, super, unique).",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "relational-algebra-basics",
+            "name": "Relational Algebra Basics",
+            "description": "Fundamental operations: select, project, union, intersection, difference, Cartesian product, and join operations.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "sql-ddl-create-table",
+            "name": "SQL DDL: CREATE TABLE",
+            "description": "Introduction to SQL, Data Definition Language (DDL) commands, focusing on creating tables, defining data types, and constraints.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "er-modeling-intro",
+            "name": "ER Modeling Introduction",
+            "description": "Basic concepts of Entity-Relationship (ER) modeling: entities, attributes, relationships, cardinality, and participation.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Advanced SQL & Database Design Principles",
+        "goal": "Master complex SQL queries for data manipulation and retrieval, and apply database design principles like normalization and ER modeling.",
+        "topics": [
+          {
+            "id": "sql-dml-crud",
+            "name": "SQL DML: INSERT, UPDATE, DELETE",
+            "description": "Data Manipulation Language (DML) commands for inserting new records, updating existing data, and deleting records from tables.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "sql-dql-select-advanced",
+            "name": "SQL DQL: SELECT (Advanced)",
+            "description": "Advanced SELECT statements including WHERE clauses, ORDER BY, GROUP BY, HAVING, and aggregate functions.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "sql-joins-subqueries",
+            "name": "SQL Joins & Subqueries",
+            "description": "Understanding different types of joins (INNER, LEFT, RIGHT, FULL OUTER) and writing complex queries using subqueries.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "views-stored-procedures",
+            "name": "Views, Stored Procedures & Functions",
+            "description": "Introduction to creating and using views, stored procedures, and user-defined functions for database abstraction and efficiency.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "normalization-forms-123nf",
+            "name": "Normalization Forms (1NF, 2NF, 3NF)",
+            "description": "Understanding the purpose of normalization to reduce data redundancy and improve data integrity. Detailed study of 1st, 2nd, and 3rd Normal Forms.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "normalization-forms-bcnf",
+            "name": "Normalization Forms (BCNF & Beyond)",
+            "description": "Exploring Boyce-Codd Normal Form (BCNF) and an introduction to 4NF and 5NF for advanced database design.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "er-to-relational-mapping",
+            "name": "ER to Relational Mapping",
+            "description": "Techniques for converting an ER model into a relational database schema, including handling various relationship types.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Transaction Management, Concurrency & Recovery",
+        "goal": "Grasp the concepts of database transactions, ensure data consistency and integrity through concurrency control, and understand recovery mechanisms.",
+        "topics": [
+          {
+            "id": "transaction-concepts-acid",
+            "name": "Transaction Concepts & ACID Properties",
+            "description": "Definition of a database transaction, its states, and the importance of Atomicity, Consistency, Isolation, and Durability (ACID) properties.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "concurrency-control-issues",
+            "name": "Concurrency Control Issues",
+            "description": "Understanding problems that arise from concurrent transactions: lost update, dirty read, unrepeatable read, and phantom read.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "locking-protocols",
+            "name": "Locking Protocols",
+            "description": "Detailed study of two-phase locking (2PL) protocol, its variations, and how it ensures serializability and avoids concurrency issues.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "timestamp-concurrency-control",
+            "name": "Timestamp-based Concurrency Control",
+            "description": "Understanding how timestamp ordering protocols manage concurrency without explicit locking, using read/write timestamps.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "database-recovery-mechanisms",
+            "name": "Database Recovery Mechanisms",
+            "description": "Techniques for recovering from system failures, including log-based recovery (undo/redo), checkpoints, and shadow paging.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "database-security-authorization",
+            "name": "Database Security & Authorization",
+            "description": "Concepts of database security, access control, user authentication, authorization (GRANT/REVOKE), and different security measures.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "integrity-constraints-triggers",
+            "name": "Integrity Constraints & Triggers",
+            "description": "Review of domain, entity, and referential integrity. Introduction to triggers for enforcing complex business rules.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Advanced Database Concepts & Emerging Trends",
+        "goal": "Explore advanced database implementation techniques, distributed systems, and contemporary database paradigms like NoSQL and Big Data.",
+        "topics": [
+          {
+            "id": "indexing-data-structures",
+            "name": "Indexing & Data Structures",
+            "description": "Understanding the importance of indexing for performance. Study of B-trees and B+ trees as primary indexing structures.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "query-processing-optimization",
+            "name": "Query Processing & Optimization",
+            "description": "Steps involved in query processing, query parsing, optimization techniques, and understanding query execution plans.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "distributed-databases",
+            "name": "Distributed Databases",
+            "description": "Concepts of distributed database systems, their advantages, disadvantages, data fragmentation, replication, and transparency.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "nosql-databases",
+            "name": "NoSQL Databases",
+            "description": "Introduction to NoSQL databases, their different types (Key-Value, Document, Column-Family, Graph), use cases, and the CAP theorem.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "data-warehousing-olap",
+            "name": "Data Warehousing & OLAP",
+            "description": "Concepts of data warehousing, ETL processes, Online Analytical Processing (OLAP) vs. OLTP, and multidimensional data models.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "big-data-cloud-databases",
+            "name": "Big Data & Cloud Databases",
+            "description": "Overview of Big Data challenges and solutions. Introduction to cloud-based database services and their benefits.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "database-administration-tuning",
+            "name": "Database Administration & Tuning",
+            "description": "Introduction to DBA roles, backup and recovery strategies, performance monitoring, and basic database tuning techniques.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "os": {
+    "subject": "Operating Systems",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Introduction to Operating Systems & Process Fundamentals",
+        "goal": "Understand the fundamental concepts of operating systems, their structure, and the basics of process management.",
+        "topics": [
+          {
+            "id": "os-introduction",
+            "name": "What is an Operating System?",
+            "description": "Definition, role, history, and key components of an operating system.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "os-structure-services",
+            "name": "Operating System Structure & Services",
+            "description": "Explore different OS structures (monolithic, layered, microkernel) and the services an OS provides to users and programs.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "system-calls",
+            "name": "System Calls",
+            "description": "Understanding the interface between user programs and the OS, including types of system calls and their implementation.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "processes-concept",
+            "name": "Processes: Concept & Management",
+            "description": "Definition of a process, process states, Process Control Blocks (PCB), and operations on processes.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "inter-process-communication",
+            "name": "Inter-Process Communication (IPC)",
+            "description": "Introduction to mechanisms that allow processes to communicate and synchronize their actions, such as shared memory and message passing.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "threads-overview",
+            "name": "Threads: Concept & Types",
+            "description": "Understanding threads as lightweight processes, user-level vs. kernel-level threads, and their benefits.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "CPU Scheduling & Process Synchronization",
+        "goal": "Learn how the CPU is efficiently allocated among competing processes and how to manage concurrent access to shared resources.",
+        "topics": [
+          {
+            "id": "cpu-scheduling-basics",
+            "name": "CPU Scheduling Concepts",
+            "description": "Goals of CPU scheduling, types of schedulers, and evaluation criteria for scheduling algorithms.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "scheduling-algorithms-part1",
+            "name": "Common Scheduling Algorithms (Part 1)",
+            "description": "Detailed study of First-Come, First-Served (FCFS), Shortest-Job-First (SJF), and Priority scheduling.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "scheduling-algorithms-part2",
+            "name": "Common Scheduling Algorithms (Part 2)",
+            "description": "Detailed study of Round Robin, Multilevel Queue, and Multilevel Feedback Queue scheduling.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "process-synchronization-intro",
+            "name": "Process Synchronization Background",
+            "description": "Understanding the need for synchronization, critical section problem, and race conditions.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "mutex-semaphores",
+            "name": "Mutex Locks & Semaphores",
+            "description": "Exploring software and hardware solutions for the critical section problem, including mutex locks and semaphores.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "classic-sync-problems",
+            "name": "Classic Synchronization Problems",
+            "description": "Analyzing classic problems like the Producer-Consumer, Readers-Writers, and Dining Philosophers problems and their solutions.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Deadlocks & Memory Management Techniques",
+        "goal": "Identify conditions for deadlocks and strategies for handling them, and understand various memory management schemes.",
+        "topics": [
+          {
+            "id": "deadlock-characterization",
+            "name": "Deadlock Characterization",
+            "description": "Understanding the four necessary conditions for a deadlock to occur.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "deadlock-prevention",
+            "name": "Deadlock Prevention",
+            "description": "Strategies to prevent deadlocks by negating one or more of the necessary conditions.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "deadlock-avoidance",
+            "name": "Deadlock Avoidance (Banker's Algorithm)",
+            "description": "Techniques to avoid deadlocks by dynamically checking the resource-allocation state, focusing on Banker's Algorithm.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "deadlock-detection-recovery",
+            "name": "Deadlock Detection & Recovery",
+            "description": "Methods for detecting deadlocks when they occur and strategies for recovering from them.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "memory-management-intro",
+            "name": "Memory Management Background",
+            "description": "Logical vs. physical address space, memory-management unit (MMU), and basic memory allocation concepts.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "contiguous-memory-allocation",
+            "name": "Contiguous Memory Allocation",
+            "description": "Techniques like first-fit, best-fit, and worst-fit, along with problems like external and internal fragmentation.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "paging-segmentation",
+            "name": "Paging & Segmentation",
+            "description": "Detailed study of paging (concept, hardware support, TLB) and segmentation as non-contiguous memory allocation schemes.",
+            "estimatedHours": 4,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Virtual Memory, File Systems & I/O Systems",
+        "goal": "Master advanced memory management techniques, understand file system design, and learn about I/O device management.",
+        "topics": [
+          {
+            "id": "virtual-memory-concept",
+            "name": "Virtual Memory Concepts",
+            "description": "Introduction to virtual memory, its benefits, and the concept of demand paging.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "page-replacement-algorithms",
+            "name": "Page Replacement Algorithms",
+            "description": "Study of common page replacement algorithms: FIFO, Optimal, and LRU (Least Recently Used).",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "thrashing-and-locality",
+            "name": "Thrashing and Locality",
+            "description": "Understanding the phenomenon of thrashing and the principle of locality in memory access.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "file-concept-access",
+            "name": "File Concept & Access Methods",
+            "description": "Definition of a file, file attributes, operations, and various access methods (sequential, direct).",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "directory-structure-allocation",
+            "name": "Directory Structure & File Allocation Methods",
+            "description": "Different directory structures (single-level, two-level, tree-structured) and methods for allocating disk space (contiguous, linked, indexed).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "io-hardware-interface",
+            "name": "I/O Hardware & Application I/O Interface",
+            "description": "Understanding I/O devices, controllers, and the application programming interface for I/O operations.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "kernel-io-subsystem",
+            "name": "Kernel I/O Subsystem",
+            "description": "Functions of the kernel's I/O subsystem, including error handling, buffering, caching, and spooling.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "cns": {
+    "subject": "Cryptography and Network Security",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations of Cryptography",
+        "goal": "Understand fundamental security concepts, classical encryption techniques, and the basics of symmetric-key cryptography.",
+        "topics": [
+          {
+            "id": "introduction-security-concepts",
+            "name": "Introduction to Security Concepts",
+            "description": "Overview of information security goals (CIA triad), security attacks, services, and mechanisms.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "classical-ciphers",
+            "name": "Classical Ciphers",
+            "description": "Study of historic encryption methods like Caesar cipher, Playfair, Vigenère, and their cryptanalysis.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "symmetric-key-principles",
+            "name": "Symmetric Key Cryptography Principles",
+            "description": "Introduction to the concept of symmetric encryption, stream ciphers vs. block ciphers.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "data-encryption-standard-des",
+            "name": "Data Encryption Standard (DES)",
+            "description": "Detailed look at the DES algorithm, its structure, and its security limitations.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "advanced-encryption-standard-aes",
+            "name": "Advanced Encryption Standard (AES)",
+            "description": "Introduction to AES, its round functions, and its role as the current standard.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "modes-of-operation",
+            "name": "Modes of Operation for Block Ciphers",
+            "description": "Understanding ECB, CBC, CFB, OFB, and CTR modes and their practical implications.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Asymmetric Cryptography and Hashing",
+        "goal": "Grasp the principles of public-key cryptography, cryptographic hash functions, and digital signatures.",
+        "topics": [
+          {
+            "id": "number-theory-for-crypto",
+            "name": "Number Theory for Cryptography",
+            "description": "Review of essential number theory concepts: modular arithmetic, prime numbers, Euler's totient function.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "public-key-cryptography-principles",
+            "name": "Public Key Cryptography Principles",
+            "description": "Introduction to asymmetric encryption, key pairs, and the concept of public/private keys.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "rsa-algorithm",
+            "name": "RSA Algorithm",
+            "description": "In-depth study of the RSA encryption and decryption process, including key generation.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "diffie-hellman-key-exchange",
+            "name": "Diffie-Hellman Key Exchange",
+            "description": "Understanding how two parties can establish a shared secret over an insecure channel.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "cryptographic-hash-functions",
+            "name": "Cryptographic Hash Functions",
+            "description": "Properties of hash functions, examples (MD5, SHA-1, SHA-256), and their applications.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "message-authentication-codes",
+            "name": "Message Authentication Codes (MACs)",
+            "description": "Concept of MACs for data integrity and authentication, comparing with hash functions.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "digital-signatures",
+            "name": "Digital Signatures",
+            "description": "How digital signatures provide authenticity, integrity, and non-repudiation, including DSA and RSA signatures.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Network Security Protocols and Applications",
+        "goal": "Explore key management, authentication systems, and widely used security protocols for network communication.",
+        "topics": [
+          {
+            "id": "key-management-distribution",
+            "name": "Key Management and Distribution",
+            "description": "Methods for secure key exchange, generation, storage, and revocation in cryptographic systems.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "authentication-applications",
+            "name": "Authentication Applications (Kerberos, X.509)",
+            "description": "Study of Kerberos for network authentication and X.509 certificates for public key infrastructure.",
+            "estimatedHours": 4,
+            "day": 2
+          },
+          {
+            "id": "email-security-pgp-smime",
+            "name": "Email Security (PGP, S/MIME)",
+            "description": "Protocols and standards for securing email communications, including Pretty Good Privacy and S/MIME.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "ip-security-ipsec",
+            "name": "IP Security (IPSec)",
+            "description": "Detailed examination of IPSec architecture, authentication header (AH), and encapsulating security payload (ESP).",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "web-security-ssl-tls",
+            "name": "Web Security (SSL/TLS)",
+            "description": "Understanding the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols for securing web traffic.",
+            "estimatedHours": 4,
+            "day": 5
+          },
+          {
+            "id": "firewalls-intrusion-detection",
+            "name": "Firewalls and Intrusion Detection Systems",
+            "description": "Concepts, types, and deployment of firewalls and IDSs/IPSs for network perimeter defense.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Advanced Security Topics and Threats",
+        "goal": "Investigate common network vulnerabilities, malicious software, and emerging security challenges.",
+        "topics": [
+          {
+            "id": "wireless-network-security",
+            "name": "Wireless Network Security (WEP, WPA/2/3)",
+            "description": "Evolution of wireless security standards, their vulnerabilities, and current best practices.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "malicious-software",
+            "name": "Malicious Software (Malware)",
+            "description": "Categorization and analysis of viruses, worms, Trojans, ransomware, spyware, and rootkits.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "denial-of-service-attacks",
+            "name": "Denial of Service (DoS) and Distributed DoS (DDoS) Attacks",
+            "description": "Understanding DoS/DDoS attack mechanisms, impact, and mitigation strategies.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "buffer-overflows-exploits",
+            "name": "Buffer Overflows and Exploits",
+            "description": "Study of common software vulnerabilities like buffer overflows, format string bugs, and their exploitation.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "cloud-security-basics",
+            "name": "Cloud Security Basics",
+            "description": "Introduction to security challenges and considerations in cloud computing environments (IaaS, PaaS, SaaS).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "blockchain-security-overview",
+            "name": "Blockchain and Cryptocurrency Security Overview",
+            "description": "Basic security principles of blockchain technology and its application in cryptocurrencies.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "ethical-hacking-intro",
+            "name": "Ethical Hacking and Penetration Testing (Intro)",
+            "description": "Overview of ethical hacking methodologies, reconnaissance, scanning, and vulnerability analysis.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "computer-networks": {
+    "subject": "Computer Networks",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Introduction to Networks and the Physical Layer",
+        "goal": "Understand fundamental network concepts, different network types, the layered architecture, and the basics of data transmission at the physical layer.",
+        "topics": [
+          {
+            "id": "introduction-to-networks",
+            "name": "Introduction to Computer Networks",
+            "description": "Definition, history, applications, and basic components of computer networks.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "network-types-and-topologies",
+            "name": "Network Types and Topologies",
+            "description": "Explore LAN, WAN, MAN, PAN, and common network topologies (bus, star, ring, mesh, tree).",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "osi-tcp-ip-models",
+            "name": "OSI and TCP/IP Reference Models",
+            "description": "Detailed study of the 7-layer OSI model and the 4/5-layer TCP/IP model, their functions and comparisons.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "physical-layer-concepts",
+            "name": "Physical Layer Concepts",
+            "description": "Understanding signals (analog vs. digital), bandwidth, throughput, and latency.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "transmission-media",
+            "name": "Transmission Media",
+            "description": "Overview of guided (twisted pair, coaxial, fiber optic) and unguided (radio, microwave, infrared) media.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "data-encoding-modulation",
+            "name": "Data Encoding and Modulation",
+            "description": "Techniques for converting digital data to digital signals (e.g., NRZ, Manchester) and digital data to analog signals (ASK, FSK, PSK, QAM).",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Data Link Layer and Local Area Networks",
+        "goal": "Master the principles of reliable data transfer over a link, understand error control, flow control, multiple access protocols, and the architecture of Ethernet and Wi-Fi networks.",
+        "topics": [
+          {
+            "id": "data-link-layer-functions",
+            "name": "Data Link Layer Functions",
+            "description": "Framing, error control (detection and correction), flow control, and MAC addressing.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "error-detection-correction",
+            "name": "Error Detection and Correction",
+            "description": "Techniques like Parity Check, Checksum, and Cyclic Redundancy Check (CRC).",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "multiple-access-protocols",
+            "name": "Multiple Access Protocols",
+            "description": "Random access (ALOHA, CSMA/CD, CSMA/CA), controlled access (polling, token passing), and channelization.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "ethernet-802-3",
+            "name": "Ethernet (IEEE 802.3)",
+            "description": "Evolution of Ethernet, frame format, and operation of CSMA/CD.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "switches-and-vlans",
+            "name": "Switches and VLANs",
+            "description": "Functionality of network switches, learning MAC addresses, and configuring Virtual Local Area Networks (VLANs).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "wireless-lans-802-11",
+            "name": "Wireless LANs (IEEE 802.11 Wi-Fi)",
+            "description": "Architecture, frame format, CSMA/CA, and security aspects of Wi-Fi networks.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "arp-protocol",
+            "name": "ARP Protocol",
+            "description": "Address Resolution Protocol: Mapping IP addresses to MAC addresses.",
+            "estimatedHours": 1,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Network Layer and Routing",
+        "goal": "Grasp the concepts of inter-network communication, IP addressing, subnetting, and various routing protocols that enable data packets to traverse complex networks.",
+        "topics": [
+          {
+            "id": "network-layer-services",
+            "name": "Network Layer Services and Protocols",
+            "description": "Packetizing, logical addressing, routing, and connectionless service.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "ipv4-addressing",
+            "name": "IPv4 Addressing and Classes",
+            "description": "Understanding IP address structure, classes (A, B, C, D, E), and special addresses.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "subnetting-and-cidr",
+            "name": "Subnetting and CIDR",
+            "description": "Techniques for dividing networks into subnets and Classless Inter-Domain Routing for efficient IP address allocation.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "routing-algorithms",
+            "name": "Routing Algorithms",
+            "description": "Study of Link State (Dijkstra's algorithm) and Distance Vector (Bellman-Ford algorithm) routing algorithms.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "intra-domain-routing",
+            "name": "Intra-domain Routing Protocols (RIP, OSPF)",
+            "description": "Detailed examination of Routing Information Protocol (RIP) and Open Shortest Path First (OSPF).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "inter-domain-routing-bgp",
+            "name": "Inter-domain Routing (BGP)",
+            "description": "Understanding the Border Gateway Protocol, path attributes, and policy-based routing.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "ipv6-and-icmp",
+            "name": "IPv6 and ICMP",
+            "description": "Introduction to IPv6 addressing, header format, and the Internet Control Message Protocol (ICMP) for error reporting.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Transport Layer, Application Layer, and Network Security",
+        "goal": "Learn about end-to-end data transfer, common application protocols, and fundamental concepts of network security, including cryptography and common security mechanisms.",
+        "topics": [
+          {
+            "id": "transport-layer-services",
+            "name": "Transport Layer Services",
+            "description": "Process-to-process communication, multiplexing/demultiplexing, and connection-oriented vs. connectionless services.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "udp-protocol",
+            "name": "User Datagram Protocol (UDP)",
+            "description": "Characteristics of UDP, header format, and its use cases for simple, fast communication.",
+            "estimatedHours": 1,
+            "day": 2
+          },
+          {
+            "id": "tcp-protocol",
+            "name": "Transmission Control Protocol (TCP)",
+            "description": "Reliable data transfer, connection establishment (3-way handshake), flow control, congestion control, and TCP header.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "application-layer-protocols-1",
+            "name": "Application Layer Protocols (Web & Email)",
+            "description": "HTTP (Web), FTP (File Transfer), and email protocols: SMTP, POP3, IMAP.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "application-layer-protocols-2",
+            "name": "Application Layer Protocols (DNS & DHCP)",
+            "description": "Domain Name System (DNS) for name resolution and Dynamic Host Configuration Protocol (DHCP) for IP address assignment.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "network-security-fundamentals",
+            "name": "Network Security Fundamentals",
+            "description": "Confidentiality, integrity, availability, authentication, non-repudiation, and common network threats.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "cryptography-firewalls-vpns",
+            "name": "Cryptography, Firewalls, and VPNs",
+            "description": "Basics of symmetric and asymmetric encryption, digital signatures, firewall types, and Virtual Private Networks (VPNs).",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "daa": {
+    "subject": "Design and Analysis of Algorithms",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations of Algorithm Analysis and Basic Sorting",
+        "goal": "Understand fundamental concepts of algorithm analysis, asymptotic notations, and master basic sorting algorithms and recursive techniques.",
+        "topics": [
+          {
+            "id": "introduction-to-algorithms",
+            "name": "Introduction to Algorithms",
+            "description": "Definition of an algorithm, characteristics, and importance in computer science.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "asymptotic-notation",
+            "name": "Asymptotic Notation (Big O, Omega, Theta)",
+            "description": "Understanding Big O, Big Omega, and Big Theta notations for analyzing algorithm efficiency.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "time-space-complexity",
+            "name": "Time and Space Complexity Analysis",
+            "description": "Methods to analyze the worst-case, average-case, and best-case time and space complexity of algorithms.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "recursion-and-recurrence-relations",
+            "name": "Recursion and Recurrence Relations",
+            "description": "Introduction to recursive algorithms, writing recurrence relations, and solving them using master theorem or substitution method.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "elementary-sorting-algorithms",
+            "name": "Elementary Sorting Algorithms",
+            "description": "Analysis and implementation of Bubble Sort, Selection Sort, and Insertion Sort.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "data-structures-review",
+            "name": "Review of Essential Data Structures",
+            "description": "Brief review of arrays, linked lists, stacks, and queues and their algorithmic implications.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Advanced Sorting, Divide & Conquer, and Hashing",
+        "goal": "Explore efficient sorting techniques, master the divide and conquer paradigm, and understand hashing for efficient data retrieval.",
+        "topics": [
+          {
+            "id": "divide-and-conquer-paradigm",
+            "name": "Divide and Conquer Paradigm",
+            "description": "Understanding the general structure and application of divide and conquer algorithms.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "merge-sort",
+            "name": "Merge Sort",
+            "description": "Detailed analysis and implementation of Merge Sort, a classic divide and conquer sorting algorithm.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "quick-sort",
+            "name": "Quick Sort",
+            "description": "Detailed analysis and implementation of Quick Sort, including pivot selection strategies and its average-case performance.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "heap-sort-and-heaps",
+            "name": "Heap Sort and Heaps",
+            "description": "Understanding heap data structure (max-heap, min-heap) and its application in Heap Sort.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "hashing-and-hash-tables",
+            "name": "Hashing and Hash Tables",
+            "description": "Concepts of hashing, hash functions, collision resolution techniques (chaining, open addressing).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "greedy-algorithms-intro",
+            "name": "Introduction to Greedy Algorithms",
+            "description": "Understanding the greedy approach with simple examples like Activity Selection Problem or Change-making problem.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "counting-radix-bucket-sort",
+            "name": "Counting, Radix, and Bucket Sort",
+            "description": "Understanding non-comparison-based sorting algorithms and their specific use cases.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Graph Algorithms and Dynamic Programming Fundamentals",
+        "goal": "Master graph representation and traversal algorithms, understand shortest path and minimum spanning tree problems, and begin dynamic programming.",
+        "topics": [
+          {
+            "id": "graph-representations",
+            "name": "Graph Representations",
+            "description": "Adjacency matrix and adjacency list representations of graphs and their trade-offs.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "breadth-first-search-bfs",
+            "name": "Breadth-First Search (BFS)",
+            "description": "Algorithm, implementation, and applications of BFS for graph traversal.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "depth-first-search-dfs",
+            "name": "Depth-First Search (DFS)",
+            "description": "Algorithm, implementation, and applications of DFS, including topological sort and strongly connected components.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "minimum-spanning-trees",
+            "name": "Minimum Spanning Trees (Prim's and Kruskal's)",
+            "description": "Understanding MST problem and implementing Prim's and Kruskal's algorithms.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "shortest-path-dijkstra",
+            "name": "Shortest Path Algorithms (Dijkstra's)",
+            "description": "Dijkstra's algorithm for single-source shortest paths on graphs with non-negative edge weights.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "dynamic-programming-intro",
+            "name": "Introduction to Dynamic Programming",
+            "description": "Concepts of optimal substructure and overlapping subproblems, memoization vs. tabulation.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "dp-fibonacci-knapsack-intro",
+            "name": "DP: Fibonacci and 0/1 Knapsack (Intro)",
+            "description": "Solving classic DP problems like Fibonacci sequence and an introduction to the 0/1 Knapsack problem.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Advanced Dynamic Programming, Flow Networks, and Complexity Theory",
+        "goal": "Deepen understanding of dynamic programming, explore network flow, and grasp the basics of computational complexity theory including P, NP, and NP-completeness.",
+        "topics": [
+          {
+            "id": "dp-longest-common-subsequence",
+            "name": "Dynamic Programming: Longest Common Subsequence (LCS)",
+            "description": "Detailed analysis and implementation of the LCS problem using dynamic programming.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "dp-matrix-chain-multiplication",
+            "name": "Dynamic Programming: Matrix Chain Multiplication",
+            "description": "Solving the matrix chain multiplication problem using dynamic programming to find optimal parenthesization.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "all-pairs-shortest-path-floyd-warshall",
+            "name": "All-Pairs Shortest Path (Floyd-Warshall)",
+            "description": "Understanding and implementing the Floyd-Warshall algorithm for finding shortest paths between all pairs of vertices.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "bellman-ford-algorithm",
+            "name": "Bellman-Ford Algorithm",
+            "description": "Shortest path algorithm for graphs with negative edge weights, including detection of negative cycles.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "introduction-to-network-flow",
+            "name": "Introduction to Network Flow",
+            "description": "Concepts of flow networks, capacities, sources, sinks, and the Max-Flow Min-Cut theorem.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "p-np-np-completeness",
+            "name": "P, NP, and NP-Completeness",
+            "description": "Understanding complexity classes P and NP, NP-hard and NP-complete problems, and polynomial-time reductions.",
+            "estimatedHours": 4,
+            "day": 6
+          },
+          {
+            "id": "approximation-randomized-algorithms-intro",
+            "name": "Approximation and Randomized Algorithms (Intro)",
+            "description": "Brief overview of approximation algorithms for NP-hard problems and randomized algorithms (e.g., Karger's Min-Cut).",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "prob-stats": {
+    "subject": "Probability and Statistics",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations of Probability",
+        "goal": "Understand basic probability concepts, set theory, counting techniques, and conditional probability.",
+        "topics": [
+          {
+            "id": "introduction-to-probability",
+            "name": "Introduction to Probability",
+            "description": "Definition of probability, experiments, outcomes, sample space, and events.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "set-theory-and-events",
+            "name": "Set Theory and Events",
+            "description": "Review of set operations (union, intersection, complement) applied to events, Venn diagrams.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "basic-probability-rules",
+            "name": "Basic Probability Rules",
+            "description": "Addition rule for mutually exclusive events, general addition rule, multiplication rule.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "conditional-probability",
+            "name": "Conditional Probability",
+            "description": "Definition of conditional probability, calculating probabilities given an event has occurred.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "independence-of-events",
+            "name": "Independence of Events",
+            "description": "Understanding and testing for independent events, implications for probability calculations.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "bayes-theorem",
+            "name": "Bayes' Theorem",
+            "description": "Applying Bayes' theorem to update probabilities based on new evidence.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "counting-techniques",
+            "name": "Counting Techniques",
+            "description": "Permutations and combinations, and their application in probability problems.",
+            "estimatedHours": 3,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Random Variables and Probability Distributions",
+        "goal": "Grasp the concept of random variables and become familiar with common discrete and continuous probability distributions.",
+        "topics": [
+          {
+            "id": "random-variables",
+            "name": "Random Variables (Discrete & Continuous)",
+            "description": "Definition and types of random variables, distinguishing between discrete and continuous.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "pmf-pdf-and-cdf",
+            "name": "PMF, PDF, and CDF",
+            "description": "Understanding Probability Mass Functions (PMF), Probability Density Functions (PDF), and Cumulative Distribution Functions (CDF).",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "expected-value-and-variance",
+            "name": "Expected Value and Variance",
+            "description": "Calculating the mean (expected value) and variance of discrete and continuous random variables.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "discrete-distributions",
+            "name": "Common Discrete Distributions",
+            "description": "Properties and applications of Bernoulli, Binomial, and Poisson distributions.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "continuous-distributions-uniform-exponential",
+            "name": "Continuous Distributions (Uniform, Exponential)",
+            "description": "Understanding the Uniform and Exponential distributions and their use cases.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "normal-distribution",
+            "name": "The Normal Distribution",
+            "description": "Properties of the normal distribution, standard normal distribution, and Z-scores.",
+            "estimatedHours": 4,
+            "day": 6
+          },
+          {
+            "id": "central-limit-theorem",
+            "name": "Central Limit Theorem (Introduction)",
+            "description": "Introduction to the Central Limit Theorem and its significance for sampling distributions.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Descriptive Statistics and Sampling Distributions",
+        "goal": "Learn how to summarize, visualize, and analyze data, and understand the principles of sampling and sampling distributions.",
+        "topics": [
+          {
+            "id": "types-of-data-and-measurement-scales",
+            "name": "Types of Data and Measurement Scales",
+            "description": "Categorical vs. numerical data, nominal, ordinal, interval, and ratio scales.",
+            "estimatedHours": 1,
+            "day": 1
+          },
+          {
+            "id": "measures-of-central-tendency",
+            "name": "Measures of Central Tendency",
+            "description": "Calculating and interpreting mean, median, and mode for various datasets.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "measures-of-dispersion",
+            "name": "Measures of Dispersion",
+            "description": "Understanding range, variance, standard deviation, and interquartile range (IQR).",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "data-visualization",
+            "name": "Data Visualization",
+            "description": "Creating and interpreting histograms, box plots, bar charts, and scatter plots.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "sampling-methods",
+            "name": "Sampling Methods",
+            "description": "Introduction to different sampling techniques: simple random, stratified, cluster, and systematic sampling.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "sampling-distributions",
+            "name": "Sampling Distributions",
+            "description": "Understanding the concept of sampling distributions, particularly for the sample mean and proportion.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "point-estimation",
+            "name": "Point Estimation and Estimators",
+            "description": "Introduction to point estimates and properties of good estimators (unbiasedness, efficiency).",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Inferential Statistics: Estimation and Hypothesis Testing",
+        "goal": "Apply statistical inference techniques to estimate population parameters and test hypotheses using sample data.",
+        "topics": [
+          {
+            "id": "introduction-to-statistical-inference",
+            "name": "Introduction to Statistical Inference",
+            "description": "Overview of inferential statistics, distinguishing from descriptive statistics.",
+            "estimatedHours": 1,
+            "day": 1
+          },
+          {
+            "id": "confidence-intervals-mean",
+            "name": "Confidence Intervals for the Mean",
+            "description": "Constructing and interpreting confidence intervals for population means (Z and T-intervals).",
+            "estimatedHours": 4,
+            "day": 2
+          },
+          {
+            "id": "confidence-intervals-proportion",
+            "name": "Confidence Intervals for Proportions",
+            "description": "Constructing and interpreting confidence intervals for population proportions.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "hypothesis-testing-intro",
+            "name": "Introduction to Hypothesis Testing",
+            "description": "Formulating null and alternative hypotheses, Type I and Type II errors, significance level.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "z-tests",
+            "name": "Z-tests for Means and Proportions",
+            "description": "Performing one-sample Z-tests for population means and proportions.",
+            "estimatedHours": 4,
+            "day": 5
+          },
+          {
+            "id": "t-tests",
+            "name": "T-tests (One-sample, Two-sample)",
+            "description": "Performing one-sample, independent two-sample, and paired T-tests for means.",
+            "estimatedHours": 4,
+            "day": 6
+          },
+          {
+            "id": "introduction-to-linear-regression",
+            "name": "Introduction to Simple Linear Regression",
+            "description": "Basic concepts of correlation, linear regression model, and interpreting regression coefficients.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "python": {
+    "subject": "Python Programming",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Week 1: Python Fundamentals and Control Flow",
+        "goal": "Understand the basic syntax, data types, and fundamental control structures of Python programming.",
+        "topics": [
+          {
+            "id": "introduction-setup",
+            "name": "Introduction to Python & Environment Setup",
+            "description": "Learn what Python is, its applications, and how to install Python and set up a development environment (e.g., VS Code, Jupyter).",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "variables-data-types",
+            "name": "Variables and Basic Data Types",
+            "description": "Explore Python's fundamental data types (integers, floats, strings, booleans) and how to declare and use variables.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "operators-expressions",
+            "name": "Operators and Expressions",
+            "description": "Study arithmetic, comparison, logical, assignment, and identity operators, and how to form expressions.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "basic-input-output",
+            "name": "Basic Input and Output",
+            "description": "Learn how to take user input using `input()` and display output using `print()` with various formatting options.",
+            "estimatedHours": 1,
+            "day": 3
+          },
+          {
+            "id": "conditional-statements",
+            "name": "Conditional Statements (if, elif, else)",
+            "description": "Understand how to control program flow based on conditions using `if`, `elif`, and `else` statements.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "loops-for-while",
+            "name": "Loops (for and while)",
+            "description": "Master iteration using `for` loops (with `range()`, iterables) and `while` loops, including `break` and `continue`.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "defining-calling-functions",
+            "name": "Defining and Calling Functions",
+            "description": "Learn to define reusable blocks of code with `def`, pass arguments, and return values. Introduce docstrings.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Week 2: Data Structures and Advanced Functions",
+        "goal": "Gain proficiency in Python's built-in data structures and explore more advanced function concepts, including error handling.",
+        "topics": [
+          {
+            "id": "lists-manipulation",
+            "name": "Lists: Creation and Manipulation",
+            "description": "Deep dive into lists – creating, accessing, slicing, adding, removing, and modifying elements. Introduction to list comprehensions.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "tuples-immutability",
+            "name": "Tuples: Immutability and Use Cases",
+            "description": "Understand tuples as immutable sequences, their creation, packing/unpacking, and scenarios where they are preferred over lists.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "dictionaries-key-value",
+            "name": "Dictionaries: Key-Value Pairs",
+            "description": "Explore dictionaries for mapping key-value pairs – creation, access, modification, and common dictionary methods.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "sets-unique-elements",
+            "name": "Sets: Unique Elements and Operations",
+            "description": "Learn about sets for storing unique elements and performing set operations like union, intersection, and difference.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "string-manipulation-formatting",
+            "name": "Advanced String Manipulation and Formatting",
+            "description": "Master string methods (e.g., `split`, `join`, `find`, `replace`) and various formatting techniques (f-strings, `format()`).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "function-scope-args",
+            "name": "Function Scope and Advanced Arguments",
+            "description": "Understand local vs. global scope, and advanced function arguments (`*args`, `**kwargs`, default values, keyword arguments).",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "error-handling-try-except",
+            "name": "Error Handling (try-except-finally)",
+            "description": "Learn to gracefully handle runtime errors and exceptions using `try`, `except`, `else`, and `finally` blocks.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Week 3: Object-Oriented Programming and Modules",
+        "goal": "Grasp the core principles of Object-Oriented Programming (OOP) in Python and learn to organize code using modules and handle files.",
+        "topics": [
+          {
+            "id": "classes-objects-oop",
+            "name": "Introduction to Classes and Objects (OOP)",
+            "description": "Understand the fundamental concepts of Object-Oriented Programming, including classes as blueprints and objects as instances.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "attributes-methods",
+            "name": "Attributes and Methods",
+            "description": "Learn to define instance attributes, class attributes, and instance methods within classes. Understand `self` parameter.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "inheritance-oop",
+            "name": "Inheritance: Base and Derived Classes",
+            "description": "Explore how to create new classes (derived/child) from existing ones (base/parent) to promote code reuse.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "polymorphism-overriding",
+            "name": "Polymorphism and Method Overriding",
+            "description": "Understand polymorphism as the ability of objects of different classes to respond to the same method call. Learn method overriding.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "encapsulation-properties",
+            "name": "Encapsulation and Properties",
+            "description": "Learn about data hiding and bundling data with methods. Explore using properties (`@property` decorator) for controlled attribute access.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "modules-packages",
+            "name": "Modules and Packages",
+            "description": "Understand how to organize code into modules and packages, and how to import and use them effectively.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "file-io-operations",
+            "name": "File I/O Operations",
+            "description": "Learn to read from and write to files using various modes (read, write, append) and the `with` statement for automatic resource management.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Week 4: Advanced Concepts, Best Practices, and Libraries",
+        "goal": "Delve into more advanced Python features, understand best practices for writing clean code, and get an introduction to using external libraries.",
+        "topics": [
+          {
+            "id": "generators-iterators",
+            "name": "Generators and Iterators",
+            "description": "Explore generators (using `yield`) and iterators for memory-efficient processing of large datasets.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "decorators-functions",
+            "name": "Decorators",
+            "description": "Understand decorators as a way to modify or enhance functions or methods without changing their source code.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "context-managers",
+            "name": "Context Managers (with statement)",
+            "description": "Learn to create and use custom context managers using classes or the `@contextlib.contextmanager` decorator.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "virtual-environments",
+            "name": "Virtual Environments",
+            "description": "Understand the importance of virtual environments (`venv`) for managing project dependencies and avoiding conflicts.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "standard-external-libraries",
+            "name": "Introduction to Standard and External Libraries",
+            "description": "Overview of key modules in the Python Standard Library (e.g., `os`, `sys`, `math`, `datetime`) and the concept of `pip` for external packages.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "debugging-techniques",
+            "name": "Debugging Techniques",
+            "description": "Learn effective strategies for debugging Python code, including using print statements, logging, and basic debugger usage (e.g., `pdb`).",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "best-practices-pep8",
+            "name": "Best Practices, PEP 8, and Code Style",
+            "description": "Understand Pythonic coding conventions, the PEP 8 style guide, and practices for writing readable, maintainable, and efficient code.",
+            "estimatedHours": 1,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "java": {
+    "subject": "Java Programming",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Week 1: Java Fundamentals and Basic Syntax",
+        "goal": "Understand the core concepts of Java, set up the development environment, and master basic programming constructs like variables, operators, control flow, and arrays.",
+        "topics": [
+          {
+            "id": "intro-to-java-and-env",
+            "name": "Introduction to Java, JVM, JDK, JRE",
+            "description": "Learn what Java is, its history, and the roles of Java Virtual Machine (JVM), Java Development Kit (JDK), and Java Runtime Environment (JRE). Set up your development environment.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "basic-syntax-data-types",
+            "name": "Basic Syntax, Variables, and Data Types",
+            "description": "Explore Java's fundamental syntax, how to declare variables, and understand primitive data types (int, double, boolean, char, etc.) and string basics.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "operators-and-expressions",
+            "name": "Operators and Expressions",
+            "description": "Cover arithmetic, relational, logical, assignment, and unary operators. Understand operator precedence and how to build expressions.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "control-flow-statements",
+            "name": "Control Flow Statements (if-else, switch)",
+            "description": "Learn how to control the flow of execution in a program using conditional statements like 'if-else', 'else-if', and 'switch'.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "looping-constructs",
+            "name": "Looping Constructs (for, while, do-while)",
+            "description": "Master iterative statements: 'for' loops (including enhanced for loop), 'while' loops, and 'do-while' loops for repetitive tasks.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "arrays-and-methods",
+            "name": "Arrays and Introduction to Methods",
+            "description": "Understand how to declare, initialize, and manipulate one-dimensional arrays. Get an introduction to defining and calling methods.",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Week 2: Object-Oriented Programming (OOP) I",
+        "goal": "Grasp the fundamental principles of Object-Oriented Programming (OOP) in Java, including classes, objects, encapsulation, inheritance, and polymorphism.",
+        "topics": [
+          {
+            "id": "classes-and-objects",
+            "name": "Classes and Objects",
+            "description": "Dive into the core of OOP: defining classes as blueprints and creating objects (instances) from them. Understand instance variables and methods.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "constructors",
+            "name": "Constructors",
+            "description": "Learn about constructors, special methods used for initializing objects. Explore default, parameterized, and copy constructors.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "encapsulation",
+            "name": "Encapsulation (Getters and Setters)",
+            "description": "Understand encapsulation as a principle of bundling data and methods that operate on the data within a single unit. Implement 'getter' and 'setter' methods.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "inheritance",
+            "name": "Inheritance (is-a relationship)",
+            "description": "Explore inheritance, a mechanism where one class acquires the properties and behaviors of another class. Understand 'extends' keyword and method overriding.",
+            "estimatedHours": 4,
+            "day": 4
+          },
+          {
+            "id": "polymorphism",
+            "name": "Polymorphism (Overloading and Overriding)",
+            "description": "Learn about polymorphism, the ability of an object to take on many forms. Focus on method overloading (compile-time) and method overriding (runtime).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "abstract-classes-interfaces",
+            "name": "Abstract Classes and Interfaces",
+            "description": "Differentiate between abstract classes and interfaces, understanding their roles in achieving abstraction and defining contracts in Java.",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Week 3: Object-Oriented Programming (OOP) II & Collections",
+        "goal": "Deepen understanding of advanced OOP concepts like exception handling and packages, and gain proficiency in using the Java Collections Framework for efficient data management.",
+        "topics": [
+          {
+            "id": "exception-handling",
+            "name": "Exception Handling (try-catch-finally)",
+            "description": "Learn how to manage runtime errors using 'try', 'catch', 'finally' blocks. Understand checked vs. unchecked exceptions and throwing custom exceptions.",
+            "estimatedHours": 4,
+            "day": 1
+          },
+          {
+            "id": "packages-access-modifiers",
+            "name": "Packages and Access Modifiers",
+            "description": "Understand how to organize classes into packages and control visibility using access modifiers (public, private, protected, default).",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "intro-collections-framework",
+            "name": "Introduction to Java Collections Framework",
+            "description": "Get an overview of the Collections Framework, its hierarchy, and the benefits of using pre-built data structures.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "list-interface-implementations",
+            "name": "List Interface and Implementations (ArrayList, LinkedList)",
+            "description": "Explore the 'List' interface and its common implementations: 'ArrayList' (dynamic array) and 'LinkedList' (doubly linked list), understanding their use cases.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "set-interface-implementations",
+            "name": "Set Interface and Implementations (HashSet, TreeSet)",
+            "description": "Learn about the 'Set' interface for unique elements. Study 'HashSet' (unordered, fast) and 'TreeSet' (ordered, sorted).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "map-interface-implementations",
+            "name": "Map Interface and Implementations (HashMap, TreeMap)",
+            "description": "Understand the 'Map' interface for key-value pairs. Focus on 'HashMap' (unordered, fast) and 'TreeMap' (ordered by key).",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Week 4: Modern Java Features & File Handling",
+        "goal": "Explore modern Java features like Generics, Lambda Expressions, and the Stream API, alongside essential topics like File I/O and an introduction to multithreading.",
+        "topics": [
+          {
+            "id": "generics",
+            "name": "Generics",
+            "description": "Learn about Generics for creating type-safe and reusable code, reducing runtime errors. Understand generic classes, interfaces, and methods.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "lambda-expressions",
+            "name": "Lambda Expressions",
+            "description": "Introduce Lambda Expressions as a concise way to represent an anonymous function, especially useful for functional interfaces.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "stream-api-basics",
+            "name": "Stream API (Basics: filter, map, forEach)",
+            "description": "Get an introduction to the Stream API for processing collections of objects. Learn basic operations like 'filter', 'map', and 'forEach'.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "file-io-basics",
+            "name": "File I/O Basics (FileReader, FileWriter, BufferedReader)",
+            "description": "Understand how to perform basic file input and output operations in Java, including reading from and writing to text files using character streams.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "serialization",
+            "name": "Serialization and Deserialization",
+            "description": "Learn about object serialization, the process of converting an object into a byte stream, and deserialization, reconstructing the object from the stream.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "intro-multithreading",
+            "name": "Introduction to Multithreading (Threads, Runnable)",
+            "description": "Explore the basics of concurrent programming using threads. Understand how to create and run threads using the 'Thread' class and 'Runnable' interface.",
+            "estimatedHours": 4,
+            "day": 6
+          }
+        ]
+      }
+    ]
+  },
+  "biology": {
+    "subject": "Biology",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations of Life: Chemistry, Cells, and Energy",
+        "goal": "Understand the fundamental chemical principles, cellular structures, and basic energy processes that define life.",
+        "topics": [
+          {
+            "id": "introduction-to-biology-scientific-method",
+            "name": "Introduction to Biology & Scientific Method",
+            "description": "Overview of biology as a science, its major themes, and the process of scientific inquiry.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "chemistry-of-life-atoms-molecules",
+            "name": "Chemistry of Life: Atoms, Molecules, and Water",
+            "description": "Review of basic chemistry relevant to biology, including atomic structure, chemical bonds, and the unique properties of water.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "organic-macromolecules",
+            "name": "Organic Macromolecules (Carbohydrates, Lipids, Proteins, Nucleic Acids)",
+            "description": "Structure and function of the four major classes of organic molecules essential for life.",
+            "estimatedHours": 4,
+            "day": 2
+          },
+          {
+            "id": "cell-structure-prokaryotes-eukaryotes",
+            "name": "Cell Structure: Prokaryotes vs. Eukaryotes",
+            "description": "Comparative study of prokaryotic and eukaryotic cell organization, highlighting key differences and similarities.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "eukaryotic-cell-organelles",
+            "name": "Eukaryotic Cell Organelles and Their Functions",
+            "description": "Detailed examination of the structure and specific roles of major organelles within eukaryotic cells (e.g., nucleus, mitochondria, ER, Golgi).",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "membrane-structure-transport",
+            "name": "Membrane Structure and Transport",
+            "description": "Understanding the fluid mosaic model of cell membranes and the various mechanisms of substance transport across them (passive, active, bulk).",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "introduction-to-metabolism-enzymes",
+            "name": "Introduction to Metabolism and Enzymes",
+            "description": "Basic concepts of cellular metabolism, energy flow, and the role of enzymes as biological catalysts.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Genetics: Inheritance, DNA, and Gene Expression",
+        "goal": "Comprehend the mechanisms of heredity, the structure and replication of DNA, and the processes of gene expression and regulation.",
+        "topics": [
+          {
+            "id": "cell-cycle-and-mitosis",
+            "name": "The Cell Cycle and Mitosis",
+            "description": "Phases of the cell cycle and the process of somatic cell division (mitosis) for growth and repair.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "meiosis-and-sexual-reproduction",
+            "name": "Meiosis and Sexual Reproduction",
+            "description": "Understanding the process of gamete formation (meiosis) and its role in genetic variation and sexual reproduction.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "mendelian-genetics",
+            "name": "Mendelian Genetics and Inheritance Patterns",
+            "description": "Principles of Mendelian inheritance, monohybrid and dihybrid crosses, and probability in genetics.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "non-mendelian-inheritance",
+            "name": "Non-Mendelian Inheritance Patterns",
+            "description": "Exploring more complex inheritance patterns like incomplete dominance, codominance, multiple alleles, and polygenic inheritance.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "dna-structure-replication",
+            "name": "DNA Structure and Replication",
+            "description": "Detailed study of the double helix structure of DNA and the semi-conservative mechanism of DNA replication.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "gene-expression-transcription-translation",
+            "name": "Gene Expression: Transcription and Translation",
+            "description": "The central dogma of molecular biology: how genetic information flows from DNA to RNA (transcription) and then to protein (translation).",
+            "estimatedHours": 4,
+            "day": 6
+          },
+          {
+            "id": "gene-regulation-and-mutations",
+            "name": "Gene Regulation and Mutations",
+            "description": "Mechanisms by which gene expression is controlled in prokaryotes and eukaryotes, and the impact of mutations on genetic information.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Evolution and the Diversity of Life",
+        "goal": "Explore the theory of evolution, the mechanisms that drive it, and the vast diversity of life on Earth through classification.",
+        "topics": [
+          {
+            "id": "introduction-to-evolution-darwin",
+            "name": "Introduction to Evolution and Darwin's Theory",
+            "description": "Historical context of evolutionary thought, Darwin's theory of natural selection, and its core principles.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "evidence-for-evolution",
+            "name": "Evidence for Evolution",
+            "description": "Examination of various lines of evidence supporting evolution, including fossils, comparative anatomy, embryology, and molecular biology.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "mechanisms-of-evolution",
+            "name": "Mechanisms of Evolution (Genetic Drift, Gene Flow, Mutation)",
+            "description": "Understanding the forces that cause changes in allele frequencies in populations, beyond natural selection.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "speciation-and-phylogeny",
+            "name": "Speciation and Phylogeny",
+            "description": "How new species arise (speciation) and the use of phylogenetic trees to represent evolutionary relationships.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "classification-of-life-domains-kingdoms",
+            "name": "Classification of Life: Domains and Kingdoms",
+            "description": "Overview of the hierarchical classification system (taxonomy) and the characteristics of the three domains and major kingdoms of life.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "prokaryotes-and-viruses",
+            "name": "Prokaryotes (Bacteria, Archaea) and Viruses",
+            "description": "Characteristics, diversity, and ecological roles of bacteria, archaea, and the basic biology of viruses.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "protists-and-fungi",
+            "name": "Protists and Fungi",
+            "description": "Diversity, key features, and ecological importance of protists and fungi.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Ecology and Introduction to Plant/Animal Systems",
+        "goal": "Grasp fundamental ecological principles, explore interactions within ecosystems, and gain an introductory understanding of plant and animal form and function.",
+        "topics": [
+          {
+            "id": "ecosystems-and-biomes",
+            "name": "Ecosystems and Biomes",
+            "description": "Structure and function of ecosystems, energy flow, nutrient cycling, and the characteristics of major terrestrial and aquatic biomes.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "population-ecology",
+            "name": "Population Ecology",
+            "description": "Study of population dynamics, growth models, and factors affecting population size and distribution.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "community-ecology-interactions",
+            "name": "Community Ecology and Species Interactions",
+            "description": "Analysis of interactions between species within a community (competition, predation, symbiosis) and concepts like ecological succession.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "plant-structure-and-function",
+            "name": "Plant Structure and Function (Roots, Stems, Leaves)",
+            "description": "Basic anatomy of vascular plants and the functions of their major organs in growth, photosynthesis, and transport.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "plant-reproduction-and-growth",
+            "name": "Plant Reproduction and Growth",
+            "description": "Overview of plant life cycles, reproduction (sexual and asexual), and mechanisms of plant growth and development.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "introduction-to-animal-tissues-organ-systems",
+            "name": "Introduction to Animal Tissues and Organ Systems",
+            "description": "Overview of the four main types of animal tissues and an introduction to the major organ systems (e.g., digestive, circulatory, nervous).",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "homeostasis-and-regulation",
+            "name": "Homeostasis and Regulation in Animals",
+            "description": "The concept of homeostasis and how animals maintain stable internal conditions through feedback mechanisms.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "physics": {
+    "subject": "Physics",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Introduction to Mechanics: Kinematics and Dynamics",
+        "goal": "Establish a strong foundation in describing motion and understanding the forces that cause it, using Newton's laws.",
+        "topics": [
+          {
+            "id": "kinematics-1d",
+            "name": "Kinematics in One Dimension",
+            "description": "Study of motion along a straight line, including displacement, velocity, and acceleration.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "kinematics-2d",
+            "name": "Kinematics in Two Dimensions",
+            "description": "Analysis of projectile motion and uniform circular motion using vector components.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "newtons-laws-of-motion",
+            "name": "Newton's Laws of Motion",
+            "description": "Understanding inertia, force, mass, and action-reaction pairs as fundamental principles of dynamics.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "applications-of-newtons-laws",
+            "name": "Applications of Newton's Laws",
+            "description": "Solving problems involving forces, free-body diagrams, and various types of forces like tension and normal force.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "friction-and-drag",
+            "name": "Friction and Drag Forces",
+            "description": "Exploring static and kinetic friction, and resistive forces in fluids.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "work-and-kinetic-energy",
+            "name": "Work and Kinetic Energy",
+            "description": "Definition of work done by a force and the work-energy theorem.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Energy, Momentum, and Rotational Motion",
+        "goal": "Master the concepts of energy and momentum conservation, and introduce the principles of rotational dynamics.",
+        "topics": [
+          {
+            "id": "potential-energy-and-conservation-of-energy",
+            "name": "Potential Energy and Conservation of Energy",
+            "description": "Understanding gravitational and elastic potential energy, and applying the principle of conservation of mechanical energy.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "power",
+            "name": "Power",
+            "description": "Definition of power as the rate at which work is done or energy is transferred.",
+            "estimatedHours": 1,
+            "day": 2
+          },
+          {
+            "id": "linear-momentum-and-impulse",
+            "name": "Linear Momentum and Impulse",
+            "description": "Introduction to linear momentum and impulse, and the impulse-momentum theorem.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "conservation-of-linear-momentum-and-collisions",
+            "name": "Conservation of Linear Momentum and Collisions",
+            "description": "Applying the conservation of momentum to various types of collisions (elastic and inelastic).",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "rotational-kinematics",
+            "name": "Rotational Kinematics",
+            "description": "Describing rotational motion using angular displacement, velocity, and acceleration.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "torque-and-angular-momentum",
+            "name": "Torque and Angular Momentum",
+            "description": "Understanding torque as the rotational equivalent of force, and the concept of angular momentum.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "conservation-of-angular-momentum",
+            "name": "Conservation of Angular Momentum",
+            "description": "Applying the conservation of angular momentum to systems with changing moments of inertia.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Oscillations, Waves, and Thermodynamics",
+        "goal": "Explore periodic motion, the properties of waves, and the fundamental laws governing heat and energy transfer.",
+        "topics": [
+          {
+            "id": "simple-harmonic-motion",
+            "name": "Simple Harmonic Motion (SHM)",
+            "description": "Analysis of oscillatory motion, including springs and pendulums, and their characteristic equations.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "wave-properties",
+            "name": "Wave Properties",
+            "description": "Introduction to transverse and longitudinal waves, wavelength, frequency, amplitude, and wave speed.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "sound-waves",
+            "name": "Sound Waves",
+            "description": "Understanding the nature of sound, intensity, pitch, and the Doppler effect.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "temperature-and-heat",
+            "name": "Temperature and Heat",
+            "description": "Definitions of temperature scales, thermal expansion, and the concept of heat as energy transfer.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "heat-transfer-mechanisms",
+            "name": "Heat Transfer Mechanisms",
+            "description": "Study of conduction, convection, and radiation as methods of heat transfer.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "first-law-of-thermodynamics",
+            "name": "First Law of Thermodynamics",
+            "description": "Relating internal energy, heat, and work; understanding energy conservation in thermodynamic systems.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "second-law-of-thermodynamics",
+            "name": "Second Law of Thermodynamics",
+            "description": "Concepts of entropy, heat engines, refrigerators, and the direction of natural processes.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Electromagnetism: Electrostatics and DC Circuits",
+        "goal": "Introduce the fundamental concepts of electric charge, fields, potential, and basic direct current circuits.",
+        "topics": [
+          {
+            "id": "electric-charge-and-coulombs-law",
+            "name": "Electric Charge and Coulomb's Law",
+            "description": "Understanding charge quantization, conservation, and the force between point charges.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "electric-fields",
+            "name": "Electric Fields",
+            "description": "Concept of electric field, field lines, and calculating fields due to various charge distributions.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "electric-potential-and-potential-energy",
+            "name": "Electric Potential and Potential Energy",
+            "description": "Definition of electric potential energy and electric potential (voltage), and their relation to electric fields.",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "capacitance-and-dielectrics",
+            "name": "Capacitance and Dielectrics",
+            "description": "Understanding capacitors, their ability to store charge, and the effect of dielectric materials.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "electric-current-and-resistance",
+            "name": "Electric Current and Resistance",
+            "description": "Definitions of current, resistance, resistivity, and Ohm's Law.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "dc-circuits-series-and-parallel",
+            "name": "DC Circuits: Series and Parallel",
+            "description": "Analyzing simple direct current circuits with resistors connected in series and parallel.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "kirchhoffs-rules",
+            "name": "Kirchhoff's Rules",
+            "description": "Applying Kirchhoff's current and voltage laws to solve more complex DC circuits.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "calculus": {
+    "subject": "Calculus",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations: Functions, Limits, and Continuity",
+        "goal": "Establish a strong understanding of functions, grasp the concept of limits, and apply continuity principles to various functions.",
+        "topics": [
+          {
+            "id": "review-of-functions",
+            "name": "Review of Functions",
+            "description": "Recap of function definitions, domain, range, graphs, types of functions (polynomial, rational, exponential, logarithmic, trigonometric).",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "introduction-to-limits",
+            "name": "Introduction to Limits",
+            "description": "Intuitive understanding of limits, graphical approach, one-sided limits, and limits that do not exist.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "properties-of-limits",
+            "name": "Properties of Limits",
+            "description": "Algebraic properties of limits, direct substitution, and indeterminate forms (0/0).",
+            "estimatedHours": 3,
+            "day": 3
+          },
+          {
+            "id": "continuity",
+            "name": "Continuity",
+            "description": "Definition of continuity, types of discontinuities, and continuity on an interval.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "limits-at-infinity",
+            "name": "Limits at Infinity and Asymptotes",
+            "description": "Evaluating limits as x approaches infinity, horizontal and vertical asymptotes.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "intermediate-value-theorem",
+            "name": "Intermediate Value Theorem",
+            "description": "Understanding and applying the Intermediate Value Theorem for continuous functions.",
+            "estimatedHours": 2,
+            "day": 6
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "Differentiation: Core Concepts and Rules",
+        "goal": "Understand the definition of the derivative, master fundamental differentiation rules, and apply them to various function types.",
+        "topics": [
+          {
+            "id": "introduction-to-derivatives",
+            "name": "Introduction to Derivatives",
+            "description": "Geometric interpretation as tangent lines, instantaneous rates of change, and average rates of change.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "definition-of-the-derivative",
+            "name": "Definition of the Derivative",
+            "description": "Using the limit definition of the derivative to find derivatives of functions.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "basic-differentiation-rules",
+            "name": "Basic Differentiation Rules",
+            "description": "Power Rule, Constant Multiple Rule, Sum and Difference Rules.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "product-and-quotient-rules",
+            "name": "Product and Quotient Rules",
+            "description": "Applying the product and quotient rules for differentiating complex functions.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "chain-rule",
+            "name": "Chain Rule",
+            "description": "Mastering the chain rule for composite functions.",
+            "estimatedHours": 4,
+            "day": 5
+          },
+          {
+            "id": "derivatives-of-trigonometric-functions",
+            "name": "Derivatives of Trigonometric Functions",
+            "description": "Learning and applying derivatives of sine, cosine, tangent, cotangent, secant, and cosecant.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "implicit-differentiation",
+            "name": "Implicit Differentiation",
+            "description": "Techniques for differentiating implicitly defined functions.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Applications of Differentiation",
+        "goal": "Apply differentiation techniques to solve real-world problems involving rates of change, optimization, and curve sketching.",
+        "topics": [
+          {
+            "id": "related-rates",
+            "name": "Related Rates",
+            "description": "Solving problems where several quantities are related and all are changing with respect to time.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "extrema-on-an-interval",
+            "name": "Extrema on an Interval",
+            "description": "Finding absolute and local extrema of functions on closed intervals, critical numbers.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "optimization-problems",
+            "name": "Optimization Problems",
+            "description": "Using derivatives to find maximum or minimum values in applied contexts.",
+            "estimatedHours": 4,
+            "day": 3
+          },
+          {
+            "id": "mean-value-theorem",
+            "name": "Mean Value Theorem",
+            "description": "Understanding and applying Rolle's Theorem and the Mean Value Theorem.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "first-and-second-derivative-tests",
+            "name": "First and Second Derivative Tests",
+            "description": "Using derivatives to determine increasing/decreasing intervals, concavity, and points of inflection.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "curve-sketching",
+            "name": "Curve Sketching",
+            "description": "Combining all derivative tests to accurately sketch graphs of functions.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "lhopitals-rule",
+            "name": "L'Hôpital's Rule",
+            "description": "Using L'Hôpital's Rule to evaluate indeterminate forms of limits (0/0, ∞/∞).",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Introduction to Integration",
+        "goal": "Understand antiderivatives, grasp the concept of definite integrals, and learn basic integration techniques and applications.",
+        "topics": [
+          {
+            "id": "antiderivatives",
+            "name": "Antiderivatives and Indefinite Integrals",
+            "description": "Introduction to antiderivatives, the power rule for integration, and properties of indefinite integrals.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "definite-integrals",
+            "name": "Definite Integrals and Riemann Sums",
+            "description": "Understanding definite integrals as net area, approximating area with Riemann sums (left, right, midpoint).",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "fundamental-theorem-of-calculus-part-1",
+            "name": "Fundamental Theorem of Calculus (Part 1)",
+            "description": "Connecting differentiation and integration; evaluating definite integrals using antiderivatives.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "fundamental-theorem-of-calculus-part-2",
+            "name": "Fundamental Theorem of Calculus (Part 2)",
+            "description": "Understanding the derivative of an integral with a variable upper limit.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "u-substitution",
+            "name": "U-Substitution (Integration by Substitution)",
+            "description": "Mastering the technique of u-substitution for integrating composite functions.",
+            "estimatedHours": 4,
+            "day": 5
+          },
+          {
+            "id": "area-between-curves",
+            "name": "Applications: Area Between Curves",
+            "description": "Calculating the area bounded by two or more curves using definite integrals.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "average-value-of-a-function",
+            "name": "Applications: Average Value of a Function",
+            "description": "Calculating the average value of a function over a given interval.",
+            "estimatedHours": 2,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  },
+  "differential-calculus": {
+    "subject": "Differential Calculus",
+    "totalWeeks": 4,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "title": "Foundations: Functions, Limits, and Continuity",
+        "goal": "Establish a strong understanding of functions, their properties, and the fundamental concept of limits and continuity, which are essential prerequisites for derivatives.",
+        "topics": [
+          {
+            "id": "functions-and-graphs",
+            "name": "Functions and Their Graphs",
+            "description": "Reviewing types of functions (polynomial, rational, exponential, logarithmic, trigonometric), domain, range, and graph interpretation.",
+            "estimatedHours": 2,
+            "day": 1
+          },
+          {
+            "id": "introduction-to-limits",
+            "name": "Introduction to Limits",
+            "description": "Understanding the intuitive definition of a limit, one-sided limits, and limits from graphs and tables.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "calculating-limits",
+            "name": "Calculating Limits Using Limit Laws",
+            "description": "Applying algebraic techniques (direct substitution, factoring, rationalizing) to evaluate limits.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "limits-at-infinity",
+            "name": "Limits at Infinity and Asymptotes",
+            "description": "Analyzing limits as x approaches infinity and identifying horizontal and vertical asymptotes.",
+            "estimatedHours": 3,
+            "day": 4
+          },
+          {
+            "id": "continuity",
+            "name": "Continuity of Functions",
+            "description": "Defining continuity at a point and on an interval, and identifying types of discontinuities.",
+            "estimatedHours": 2,
+            "day": 5
+          },
+          {
+            "id": "intermediate-value-theorem",
+            "name": "The Intermediate Value Theorem (IVT)",
+            "description": "Understanding and applying the IVT to show the existence of roots or specific function values.",
+            "estimatedHours": 1,
+            "day": 6
+          },
+          {
+            "id": "week-1-review",
+            "name": "Review and Problem Solving: Limits and Continuity",
+            "description": "Consolidating understanding through practice problems covering all topics from the week.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 2,
+        "title": "The Derivative: Definition, Rules, and Basic Applications",
+        "goal": "Master the definition of the derivative and all fundamental differentiation rules, including the Chain Rule, to compute derivatives of various functions.",
+        "topics": [
+          {
+            "id": "definition-of-derivative",
+            "name": "The Definition of the Derivative",
+            "description": "Understanding the derivative as a limit (slope of tangent line, instantaneous rate of change) and computing derivatives from first principles.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "basic-differentiation-rules",
+            "name": "Basic Differentiation Rules",
+            "description": "Applying the Power Rule, Constant Multiple Rule, Sum/Difference Rule, and derivatives of exponential functions.",
+            "estimatedHours": 2,
+            "day": 2
+          },
+          {
+            "id": "product-and-quotient-rules",
+            "name": "Product and Quotient Rules",
+            "description": "Learning and applying rules for differentiating products and quotients of functions.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "derivatives-of-trigonometric",
+            "name": "Derivatives of Trigonometric Functions",
+            "description": "Memorizing and applying differentiation rules for sine, cosine, tangent, and other trigonometric functions.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "the-chain-rule",
+            "name": "The Chain Rule",
+            "description": "Understanding and applying the Chain Rule for composite functions, a crucial differentiation technique.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "higher-order-derivatives",
+            "name": "Higher-Order Derivatives",
+            "description": "Calculating second, third, and higher derivatives and understanding their interpretations.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "derivatives-of-logarithmic",
+            "name": "Derivatives of Logarithmic Functions",
+            "description": "Applying differentiation rules for natural logarithms and general logarithmic functions, including logarithmic differentiation.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 3,
+        "title": "Applications of Differentiation: Curve Sketching and Optimization",
+        "goal": "Apply derivatives to analyze function behavior, sketch graphs, solve optimization problems, and understand related rates.",
+        "topics": [
+          {
+            "id": "implicit-differentiation",
+            "name": "Implicit Differentiation",
+            "description": "Differentiating equations where y is not explicitly defined as a function of x, and finding slopes of tangent lines to implicit curves.",
+            "estimatedHours": 3,
+            "day": 1
+          },
+          {
+            "id": "related-rates",
+            "name": "Related Rates",
+            "description": "Solving problems involving rates of change of two or more related quantities with respect to time.",
+            "estimatedHours": 4,
+            "day": 2
+          },
+          {
+            "id": "extrema-and-critical-points",
+            "name": "Extrema and Critical Points",
+            "description": "Finding absolute and local maximum/minimum values of functions and identifying critical numbers.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "mean-value-theorem",
+            "name": "The Mean Value Theorem (MVT) and Rolle's Theorem",
+            "description": "Understanding and applying the MVT to relate average and instantaneous rates of change.",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "first-derivative-test",
+            "name": "The First Derivative Test and Monotonicity",
+            "description": "Using the first derivative to determine intervals where a function is increasing or decreasing, and to classify local extrema.",
+            "estimatedHours": 3,
+            "day": 5
+          },
+          {
+            "id": "concavity-and-inflection-points",
+            "name": "Concavity and Inflection Points (Second Derivative Test)",
+            "description": "Using the second derivative to determine concavity, find inflection points, and classify local extrema.",
+            "estimatedHours": 2,
+            "day": 6
+          },
+          {
+            "id": "curve-sketching",
+            "name": "Curve Sketching",
+            "description": "Combining all derivative tests and limit analysis to accurately sketch the graph of a function.",
+            "estimatedHours": 3,
+            "day": 7
+          }
+        ]
+      },
+      {
+        "weekNumber": 4,
+        "title": "Optimization, L'Hôpital's Rule, and Differentials",
+        "goal": "Solve complex optimization problems, evaluate indeterminate forms using L'Hôpital's Rule, and understand linear approximations and differentials.",
+        "topics": [
+          {
+            "id": "optimization-problems",
+            "name": "Optimization Problems",
+            "description": "Applying differentiation techniques to solve real-world problems involving maximizing or minimizing quantities.",
+            "estimatedHours": 4,
+            "day": 1
+          },
+          {
+            "id": "indeterminate-forms",
+            "name": "Indeterminate Forms and L'Hôpital's Rule (Part 1)",
+            "description": "Understanding indeterminate forms (0/0, ∞/∞) and applying L'Hôpital's Rule.",
+            "estimatedHours": 3,
+            "day": 2
+          },
+          {
+            "id": "more-indeterminate-forms",
+            "name": "L'Hôpital's Rule (Part 2)",
+            "description": "Applying L'Hôpital's Rule to other indeterminate forms (0·∞, ∞-∞, 1^∞, 0^0, ∞^0) after algebraic manipulation.",
+            "estimatedHours": 2,
+            "day": 3
+          },
+          {
+            "id": "linear-approximations",
+            "name": "Linear Approximations and Differentials",
+            "description": "Using the tangent line to approximate function values and understanding differentials (dy, dx).",
+            "estimatedHours": 2,
+            "day": 4
+          },
+          {
+            "id": "newtons-method",
+            "name": "Newton's Method (Optional/Intro)",
+            "description": "An iterative method for finding approximate roots of a real-valued function.",
+            "estimatedHours": 1,
+            "day": 5
+          },
+          {
+            "id": "antiderivatives-intro",
+            "name": "Introduction to Antiderivatives",
+            "description": "Understanding the inverse process of differentiation and finding general antiderivatives.",
+            "estimatedHours": 3,
+            "day": 6
+          },
+          {
+            "id": "comprehensive-review",
+            "name": "Comprehensive Review and Practice Exam",
+            "description": "A thorough review of all Differential Calculus concepts and techniques, followed by a practice exam to prepare for assessments.",
+            "estimatedHours": 4,
+            "day": 7
+          }
+        ]
+      }
+    ]
+  }
+}

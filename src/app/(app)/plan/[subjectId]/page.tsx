@@ -296,8 +296,8 @@ export default function PlanPage() {
             }} />
             <BookOpen size={22} style={{ position: "absolute", inset: 0, margin: "auto", color: subject.color }} />
           </div>
-          <p style={{ color: "#5a4a22", fontWeight: 600 }}>Drona is preparing your study plan...</p>
-          <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>This may take 15–30 seconds</p>
+          <p style={{ color: "#5a4a22", fontWeight: 600 }}>Loading your study plan...</p>
+          <p style={{ color: "#a0845e", fontSize: "0.85rem" }}>Just a moment</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
