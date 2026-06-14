@@ -10,6 +10,7 @@ import {
   Brain, Target, TrendingUp, CheckCircle2, BarChart3,
 } from "lucide-react";
 import { getSubjectById } from "@/lib/subjects";
+import { getAllProgressClient } from "@/lib/client-db";
 
 interface SubjectProgress {
   completedTopics: string[];
@@ -102,17 +103,15 @@ export default function DashboardPage() {
   // Fetch all-subjects progress on mount
   useEffect(() => {
     if (!session?.user?.email) return;
+    const userEmail = session.user.email;
+    const userId = (session.user as { id?: string }).id ?? userEmail;
     const fetchProgress = async () => {
       try {
-        const res = await fetch("/api/progress");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.progress) {
-            setProgressMap(data.progress);
-          }
-        }
-      } catch {
-        // Non-fatal
+        const progress = await getAllProgressClient(userId, userEmail);
+        setProgressMap(progress);
+      } catch (e) {
+        // Non-fatal — dashboard still renders without progress
+        console.warn("[dashboard] progress read failed:", e);
       } finally {
         setProgressLoaded(true);
       }

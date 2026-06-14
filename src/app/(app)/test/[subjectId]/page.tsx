@@ -3,7 +3,9 @@
 // Mock test taking page — supports ?week=N for per-week tests or full syllabus
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { getSubjectById } from "@/lib/subjects";
+import { createTestClient } from "@/lib/client-db";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Loader2, ChevronLeft, ChevronRight, Send, ClipboardList, BookOpen, Upload } from "lucide-react";
 
@@ -51,9 +53,12 @@ interface Week {
 
 export default function TestPage() {
   const { subjectId } = useParams<{ subjectId: string }>();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const subject = getSubjectById(subjectId);
+  const userEmail = session?.user?.email ?? "";
+  const userId = (session?.user as { id?: string } | undefined)?.id ?? userEmail;
 
   // week=N means only test week N topics; absent = full syllabus
   const weekParam = searchParams.get("week");
@@ -86,13 +91,29 @@ export default function TestPage() {
       }
       const data = await res.json();
       if (!data.test) throw new Error("No test data received from AI");
-      setTest(data.test);
-      setTestId(data.testId);
-      setTimeLeft(data.test.duration * 60);
-      // Save test data to localStorage as fallback for the results page
-      // (in case Firestore Admin SDK is unavailable for /api/agent/test-data)
+
+      // Persist the test to Firestore (client SDK, authenticated) so it shows in
+      // the profile's test history. Fall back to the server's id if this fails.
+      let realTestId = data.testId as string;
       try {
-        localStorage.setItem(`testData_${data.testId}`, JSON.stringify(data.test));
+        realTestId = await createTestClient({
+          subjectId,
+          subjectName: subject?.name || subjectId,
+          completedTopics: topics,
+          test: data.test,
+          userId,
+          userEmail,
+        });
+      } catch (persistErr) {
+        console.warn("[test] Could not persist test to Firestore:", persistErr);
+      }
+
+      setTest(data.test);
+      setTestId(realTestId);
+      setTimeLeft(data.test.duration * 60);
+      // Cache test data locally for the results page
+      try {
+        localStorage.setItem(`testData_${realTestId}`, JSON.stringify(data.test));
       } catch { /* non-fatal */ }
     } catch (e) {
       console.error("Failed to load test:", e);
@@ -102,53 +123,26 @@ export default function TestPage() {
     }
   };
 
-  // Helper: fetch or generate a plan and return its topics for a given week (or all weeks)
-  // NOTE: Returns ALL topics regardless of completion status — no study gate.
+  // Helper: load the subject's plan and return its topic names for a given week
+  // (or all weeks). Plans are pre-generated and served statically, so this is a
+  // fast lookup with no completion gate.
   const getTopicsFromPlan = async (weekNumber: number | null): Promise<string[]> => {
-    // 1. Try to fetch existing plan from progress API
-    try {
-      const progressRes = await fetch(`/api/progress?subjectId=${subjectId}`);
-      if (progressRes.ok) {
-        const progressData = await progressRes.json();
-        const topicNameMap: Record<string, string> = progressData.topicNameMap || {};
-
-        // If we have a plan stored, use ALL its topics (not just completed ones)
-        if (progressData.plan) {
-          const plan = progressData.plan as { weeks: Week[] };
-          if (weekNumber !== null) {
-            const week = plan.weeks.find((w) => w.weekNumber === weekNumber);
-            // Return all topics for this week regardless of completion
-            if (week) return week.topics.map(t => topicNameMap[t.id] || t.name);
-            // Week not found in plan — fall through to generate fresh plan below
-          } else {
-            // Full syllabus — all topics from plan
-            return plan.weeks.flatMap(w => w.topics.map(t => topicNameMap[t.id] || t.name));
-          }
-        }
-        // No plan stored at all — fall through to AI generation below
-      }
-    } catch {
-      // Non-fatal — fall through to AI generation
-    }
-
-    // 2. No stored plan — generate a fresh plan via AI and use all its topics
-    setLoadingMessage("Generating study plan first...");
     const planRes = await fetch("/api/agent/plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subjectId, subjectName: subject?.name }),
     });
-    if (!planRes.ok) throw new Error("Failed to generate study plan");
+    if (!planRes.ok) throw new Error("Failed to load study plan");
     const planData = await planRes.json();
     const plan = planData.plan as { weeks: Week[] };
     if (!plan) throw new Error("No plan data received");
 
     if (weekNumber !== null) {
       const week = plan.weeks.find((w) => w.weekNumber === weekNumber);
-      if (!week) throw new Error(`Week ${weekNumber} not found in generated plan`);
-      return week.topics.map(t => t.name);
+      if (!week) throw new Error(`Week ${weekNumber} not found in plan`);
+      return week.topics.map((t) => t.name);
     }
-    return plan.weeks.flatMap(w => w.topics.map(t => t.name));
+    return plan.weeks.flatMap((w) => w.topics.map((t) => t.name));
   };
 
   // Fetch progress / plan topics, then generate test — no completion gate

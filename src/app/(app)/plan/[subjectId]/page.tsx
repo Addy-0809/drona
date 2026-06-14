@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getSubjectById } from "@/lib/subjects";
+import { saveProgressClient, getSubjectProgressClient } from "@/lib/client-db";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Youtube, Loader2, BookOpen, Trophy, Clock, ClipboardList } from "lucide-react";
 import Link from "next/link";
@@ -41,6 +42,7 @@ export default function PlanPage() {
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
 
   const userEmail = session?.user?.email;
+  const userId = (session?.user as { id?: string } | undefined)?.id ?? userEmail ?? "";
   const progressDocId = userEmail ? `${userEmail.replace(/[^a-zA-Z0-9]/g, "_")}_${subjectId}` : null;
 
   const [topicNameMap, setTopicNameMap] = useState<Record<string, string>>({});
@@ -86,25 +88,27 @@ export default function PlanPage() {
       }
       if (pId) payload.planId = pId;
 
-      const res = await fetch("/api/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      await saveProgressClient({
+        subjectId,
+        subjectName: subject?.name || subjectId,
+        completedTopics: completedNames,
+        completedTopicIds: completedArr,
+        plan: (payload.plan as Plan | undefined) || undefined,
+        planId: (payload.planId as string | undefined) ?? undefined,
+        topicNameMap: (payload.topicNameMap as Record<string, string> | undefined) || undefined,
+        userId,
+        userEmail,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error("[progress] Save failed:", err);
-      } else {
-        console.log("[progress] Saved via API:", subjectId, "| topics:", completedNames.length);
-      }
+      console.log("[progress] Saved to Firestore:", subjectId, "| topics:", completedNames.length);
     } catch (e) {
       console.error("Failed to save progress:", e);
     }
-  }, [userEmail, subjectId, topicNameMap, subject?.name]);
+  }, [userEmail, userId, subjectId, topicNameMap, subject?.name]);
 
   const fetchPlan = async () => {
     setLoading(true);
     setError(null);
+    let restored = new Set<string>(); // completed-topic ids recovered from cache/Firestore
     try {
       // 1) Try sessionStorage first — instant (handles back-navigation)
       if (sessionKey) {
@@ -131,14 +135,16 @@ export default function PlanPage() {
         } catch { /* continue */ }
       }
 
-      // 2) Try /api/progress (Admin SDK — same as test page reads)
+      // 2) Read saved progress from Firestore (client SDK, authenticated)
       if (userEmail) {
         try {
-          const res = await fetch(`/api/progress?subjectId=${subjectId}`);
-          if (res.ok) {
-            const data = await res.json();
-            const ids = (data.completedTopicIds || []) as string[];
-            if (ids.length > 0) setCompletedTopics(new Set(ids));
+          const data = await getSubjectProgressClient(userEmail, subjectId);
+          if (data) {
+            const ids = data.completedTopicIds || [];
+            if (ids.length > 0) {
+              restored = new Set(ids);
+              setCompletedTopics(restored);
+            }
             if (data.topicNameMap) setTopicNameMap(data.topicNameMap);
             if (data.plan) {
               const planData = data.plan as Plan;
@@ -149,14 +155,15 @@ export default function PlanPage() {
                 planData.weeks.forEach(w => w.topics.forEach(t => { nameMap[t.id] = t.name; }));
                 setTopicNameMap(nameMap);
               }
-              saveToSession(planData, data.planId || null, new Set(ids), nameMap);
-              console.log("[plan] Loaded from /api/progress cache");
+              saveToSession(planData, data.planId || null, restored, nameMap);
+              console.log("[plan] Loaded progress from Firestore");
               setLoading(false);
               return;
             }
+            // Had ticks but no stored plan — keep `restored`, load the plan below
           }
         } catch (err) {
-          console.warn("Progress API read failed (non-fatal):", err);
+          console.warn("Progress read failed (non-fatal):", err);
         }
       }
 
@@ -177,9 +184,9 @@ export default function PlanPage() {
       const nameMap: Record<string, string> = {};
       data.plan.weeks.forEach((w: Week) => w.topics.forEach((t: Topic) => { nameMap[t.id] = t.name; }));
       setTopicNameMap(nameMap);
-      saveToSession(data.plan, data.planId, completedTopics, nameMap);
-      // Save full plan via API (same path the test page reads)
-      saveProgress(completedTopics, data.plan, data.planId, nameMap);
+      saveToSession(data.plan, data.planId, restored, nameMap);
+      // Persist the plan (with any restored ticks) so profile/dashboard can read it
+      saveProgress(restored, data.plan, data.planId, nameMap);
     } catch (e) {
       console.error("Failed to load plan:", e);
       setError(e instanceof Error ? e.message : "Failed to generate study plan");

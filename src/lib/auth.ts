@@ -73,9 +73,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as unknown as Record<string, unknown>).role =
           (token as Record<string, unknown>).role || "student";
       }
+      // Expose the Google id_token so the client can sign in to Firebase Auth
+      // (FirebaseAuthBridge) and perform authenticated Firestore reads/writes.
+      (session as unknown as Record<string, unknown>).idToken =
+        (token as Record<string, unknown>).idToken;
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      // Capture the Google OIDC id_token on sign-in for the Firebase Auth bridge.
+      if (account?.id_token) {
+        (token as Record<string, unknown>).idToken = account.id_token;
+      }
       if (user) {
         token.sub = user.id;
         // Ensure email is persisted in the JWT token
