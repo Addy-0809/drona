@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { planGraph } from "@/lib/langgraph";
+import { getStaticPlan } from "@/lib/static-plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +23,16 @@ export async function POST(req: NextRequest) {
 
     const { subjectId, subjectName } = await req.json();
 
-    // Try to load shared plan from Firestore — same plan for all users
+    // 1) Serve the pre-generated static plan — identical for every user.
+    // No LLM call, no DB dependency: instant and Vercel-safe. This is the
+    // primary path; the Firestore + LLM branches below are fallbacks only
+    // for a subject that hasn't been seeded yet (run `npm run seed:plans`).
+    const staticPlan = getStaticPlan(subjectId);
+    if (staticPlan) {
+      return NextResponse.json({ plan: staticPlan, planId: subjectId, cached: true, source: "static" });
+    }
+
+    // 2) Try to load shared plan from Firestore — same plan for all users
     try {
       const db = adminDb();
       if (db) {
