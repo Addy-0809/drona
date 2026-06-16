@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { visionLLM } from "@/lib/langchain";
 import { HumanMessage } from "@langchain/core/messages";
+import { parseLLMJson } from "@/lib/llm-json";
 
 export async function POST(req: NextRequest) {
   try {
@@ -84,7 +85,9 @@ Return ONLY valid JSON in this exact format:
   }
 }
 
-Make the mock paper comprehensive, realistic, and following the same difficulty level and pattern as the original.`;
+Make the mock paper comprehensive, realistic, and following the same difficulty level and pattern as the original.
+
+IMPORTANT: Output strictly valid, parseable JSON. Escape all special characters, and do NOT put literal newlines, tabs, or unescaped double-quotes inside any string value — keep each string on a single line.`;
 
     // ── LangChain multimodal message with vision model ───────────────────
     console.log("[paper] Invoking LangChain vision model for paper analysis");
@@ -98,10 +101,24 @@ Make the mock paper comprehensive, realistic, and following the same difficulty 
       ],
     });
 
-    const result = await visionLLM.invoke([message]);
-    const text = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
-    const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const paperData = JSON.parse(jsonText);
+    // Vision models occasionally emit malformed JSON (raw newlines inside
+    // strings, truncation, prose). Parse robustly and retry once on failure.
+    let paperData: Record<string, unknown> | null = null;
+    let lastParseError = "";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const result = await visionLLM.invoke([message]);
+        const text = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
+        paperData = parseLLMJson<Record<string, unknown>>(text);
+        break;
+      } catch (parseErr) {
+        lastParseError = parseErr instanceof Error ? parseErr.message : String(parseErr);
+        console.warn(`[paper] attempt ${attempt + 1} failed to parse model JSON:`, lastParseError);
+      }
+    }
+    if (!paperData) {
+      throw new Error(`The AI returned malformed output — please try again. (${lastParseError})`);
+    }
 
     // Save to Firestore — optional
     let paperId = `local-${Date.now()}`;
